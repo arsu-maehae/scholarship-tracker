@@ -11,8 +11,8 @@ database_url = URL.create(
     drivername="postgresql+psycopg",
     username=os.environ["POSTGRES_USER"],
     password=os.environ["POSTGRES_PASSWORD"],
-    host="127.0.0.1",
-    port=5433,
+    host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+    port=int(os.environ.get("POSTGRES_PORT", "5433")),
     database=os.environ["POSTGRES_DB"],
 )
 

@@ -4,6 +4,14 @@ Prepared: 18 November 2026, Asia/Bangkok.
 
 This handoff supersedes the early planning-only Scholarship_Tracker_Project_Handoff.md. The application now exists and is working. Older planning documents describe features that have not been implemented. Current repository files and fresh command output are authoritative if they differ from this snapshot.
 
+## PostgreSQL CI milestone - 18 November 2026
+
+GitHub Actions runs the offline importer tests, frontend build, and PostgreSQL 17 integration test on pushes and pull requests. The integration test requires an explicitly configured empty `scholarship_tracker_test` database; it does not delete tables or touch the local application database. It runs both Alembic migrations from scratch, checks preview and repeat imports, and checks search filters and hidden review states. Database host and port can be set with `POSTGRES_HOST` and `POSTGRES_PORT`; existing local defaults remain unchanged.
+
+For a local run, start an isolated PostgreSQL 17 instance with a new empty database named `scholarship_tracker_test`, set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` and `POSTGRES_PORT` for that instance, then run from `backend`: `python -m unittest discover -s tests -p test_postgresql_integration.py -v`. Never point the test at the real catalogue. The integration suite and SQLite suite run in separate processes because the SQLite tests alter model types in memory.
+
+The next product milestone is to establish a source-review workflow and add a small, officially verified batch of scholarships. No source facts or review dates were changed during the CI milestone. Check Git and GitHub for current merge and CI status.
+
 ## 1. Owner, objective and working style
 
 Owner: Arsu Maehae, Computer Engineering student at King Mongkut's University of Technology North Bangkok. This is a practical full-stack/software-engineering portfolio project, personally motivated by researching postgraduate scholarships.
