@@ -172,6 +172,7 @@ def search_scholarships(
                     "slug": scheme_slug,
                 },
                 "cycle": scholarship.cycle,
+                "description": scholarship.description,
                 "intake_year": scholarship.intake_year,
                 "countries": scholarship.countries,
                 "degree_levels": scholarship.degree_levels,

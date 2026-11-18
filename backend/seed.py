@@ -9,6 +9,9 @@ SCHEMES = [
     {"name": "Thai government (ก.พ.)", "slug": "thai-government"},
     {"name": "Chevening", "slug": "chevening"},
     {"name": "Fulbright", "slug": "fulbright"},
+    {"name": "Japanese Government (MEXT)", "slug": "mext"},
+    {"name": "DAAD", "slug": "daad"},
+    {"name": "Australian Government Research Training Program", "slug": "australian-rtp"},
 ]
 
 

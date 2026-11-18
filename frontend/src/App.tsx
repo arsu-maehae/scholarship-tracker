@@ -9,6 +9,7 @@ type Scholarship = {
   id: number; title: string; scheme: { name: string; slug: string }
   cycle: string | null; intake_year: number | null
   countries: string[] | null; degree_levels: string[] | null
+  description: string | null
   fields_of_study: string[] | null; funding_category: string
   field_match?: 'not_filtered' | 'exact' | 'unverified'
   funding_notes: string | null; call_status: string
@@ -22,7 +23,8 @@ const labels: Record<string, string> = {
   bachelor: "Bachelor's", master: "Master's", phd: 'PhD', master_phd: 'Combined master’s / PhD',
   full: 'Full funding', tuition_only: 'Tuition only', partial: 'Partial funding', unknown: 'Unverified',
   ai: 'Artificial intelligence', 'data-science': 'Data science', 'software-engineering': 'Software engineering',
-  robotics: 'Robotics', cybersecurity: 'Cybersecurity',
+  robotics: 'Robotics', cybersecurity: 'Cybersecurity', 'computer-science': 'Computer science',
+  engineering: 'Engineering', mathematics: 'Mathematics', 'natural-sciences': 'Natural sciences',
 }
 const countryNames = new Intl.DisplayNames(['en'], { type: 'region' })
 const label = (value: string) => labels[value] ?? value.replaceAll('-', ' ')
@@ -147,7 +149,12 @@ export default function App() {
               {item.field_match === 'unverified' && <p className="field-match-note field-unverified">Possible match — fields unrecorded. Check whether your subject is supported.</p>}
               <div className="tags"><span className="funding-tag">{label(item.funding_category)}</span>{item.degree_levels?.map(degree => <span key={degree}>{label(degree)}</span>)}</div>
               <dl className="card-facts"><div><dt>Study destinations</dt><dd>{item.countries?.length ? item.countries.map(countryName).join(' · ') : 'Not recorded'}</dd></div><div><dt>Fields of study</dt><dd>{item.fields_of_study?.length ? item.fields_of_study.map(label).join(' · ') : 'Not recorded'}</dd></div></dl>
-              <details><summary>Funding and source details</summary><p>{item.funding_notes ?? 'Funding details have not been recorded.'}</p><p className="source-note">Last checked: {item.last_checked ?? 'Not recorded'}. Confirm current eligibility, coverage and dates on the official website.</p></details>
+              <details className="scholarship-details"><summary>View scholarship details</summary>
+                <div className="detail-section"><h4>About and eligibility</h4><p>{item.description ?? 'Eligibility details have not been recorded.'}</p></div>
+                <div className="detail-section"><h4>Funding and costs</h4><p>{item.funding_notes ?? 'Funding details have not been recorded.'}</p></div>
+                <div className="detail-section"><h4>Dates and application</h4><p>Intake: {item.intake_year ?? 'Not recorded'}. Application deadline: not recorded. Check the official source for the current call and deadline.</p></div>
+                <p className="source-note">Source last checked: {item.last_checked ?? 'Not recorded'}. The official source has the current requirements and award terms.</p>
+              </details>
               <div className="card-footer"><span>Check official requirements</span>{url ? <a className="official-link" href={url} target="_blank" rel="noopener noreferrer">Official website <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <span>Official link not recorded</span>}</div>
             </article>
           })}

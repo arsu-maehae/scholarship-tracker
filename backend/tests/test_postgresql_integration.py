@@ -73,6 +73,20 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
         self.assertEqual(search(field="ai", limit=1, offset=1)["total"], 2)
         self.assertEqual(len(search(field="ai", limit=1, offset=1)["items"]), 1)
 
+        reviewed = load_catalogue(Path("data/reviewed_2026-11-18.json"))
+        with Session(engine) as session, session.begin():
+            for slug in sorted({item["scheme_slug"] for item in reviewed}):
+                session.add(ScholarshipScheme(name=slug, slug=slug))
+        self.assertEqual(run_import(engine, reviewed, output=quiet)["INSERT"], 3)
+        self.assertEqual(run_import(engine, reviewed, apply=True, output=quiet)["INSERT"], 3)
+        self.assertEqual(run_import(engine, reviewed, output=quiet)["UNCHANGED"], 3)
+        self.assertEqual(search()["total"], 8)
+        japan = search(country="JP", degree="master")
+        self.assertEqual(japan["total"], 1)
+        self.assertIn("graduate", japan["items"][0]["description"].lower())
+        self.assertEqual(search(country="DE", field="computer-science")["total"], 1)
+        self.assertEqual(search(country="AU", funding="full")["total"], 0)
+
     @classmethod
     def tearDownClass(cls):
         engine.dispose()

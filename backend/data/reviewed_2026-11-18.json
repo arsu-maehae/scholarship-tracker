@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "scholarships": [
+    {
+      "source_key": "mext:research-students:overview",
+      "scheme_slug": "mext",
+      "title": "MEXT Research Students Scholarship",
+      "cycle": "Programme overview - current call unverified",
+      "countries": [
+        "JP"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "full",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "Graduate research route, including master's and doctoral study. The official overview says applicants must be under 35 and eligible for graduate admission. Embassy and university routes have different requirements; check the latest guidelines and your local Japanese embassy or university.",
+      "funding_notes": "The official overview lists tuition exemption, a monthly stipend and round-trip airfare. Amounts and conditions depend on the route and current guidelines; check which costs are covered for your award.",
+      "official_url": "https://www.studyinjapan.go.jp/en/planning/scholarships/mext-scholarships/",
+      "last_checked": "2026-11-18"
+    },
+    {
+      "source_key": "daad:stem-masters:2027-2028",
+      "scheme_slug": "daad",
+      "title": "DAAD Study Scholarships for STEM Disciplines",
+      "cycle": "Winter term 2027/2028",
+      "intake_year": 2027,
+      "countries": [
+        "DE"
+      ],
+      "degree_levels": [
+        "master"
+      ],
+      "fields_of_study": [
+        "computer-science",
+        "engineering",
+        "mathematics",
+        "natural-sciences"
+      ],
+      "funding_category": "partial",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "For high-achieving applicants from eligible developing and emerging countries pursuing a full-time, on-campus STEM master's in Germany. A recognised first degree is required; applicants who already hold a master's at the deadline are ineligible. Check country eligibility and language requirements with DAAD.",
+      "funding_notes": "The listed award includes a monthly stipend, insurance, study allowance and a travel allowance on application. DAAD does not pay tuition fees and requires a tuition-free programme; other costs may remain. Check the current announcement for exact terms.",
+      "official_url": "https://www2.daad.de/deutschland/stipendium/datenbank/en/21148-scholarship-database?detail=57742130",
+      "last_checked": "2026-11-18"
+    },
+    {
+      "source_key": "australian-rtp:research-degrees:overview",
+      "scheme_slug": "australian-rtp",
+      "title": "Australian Government Research Training Program",
+      "cycle": "Programme overview - university calls vary",
+      "countries": [
+        "AU"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "unknown",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "Supports domestic and overseas students undertaking research master's or research doctorates at participating Australian providers. Apply directly to a university and check its eligibility, research programme, selection rules and deadlines.",
+      "funding_notes": "An award can include one or more of a tuition fee offset, living stipend and allowances. Coverage varies by university and award; full funding is not confirmed.",
+      "official_url": "https://www.education.gov.au/research-block-grants/research-training-program",
+      "last_checked": "2026-11-18"
+    }
+  ]
+}

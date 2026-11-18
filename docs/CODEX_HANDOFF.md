@@ -4,6 +4,14 @@ Prepared: 18 November 2026, Asia/Bangkok.
 
 This handoff supersedes the early planning-only Scholarship_Tracker_Project_Handoff.md. The application now exists and is working. Older planning documents describe features that have not been implemented. Current repository files and fresh command output are authoritative if they differ from this snapshot.
 
+## Catalogue review and details milestone - 18 November 2026
+
+Milestones 5-7 are implemented on `feat/catalogue-review-details`. `docs/CATALOGUE_REVIEW.md` records the review workflow and official sources. The reviewed batch `backend/data/reviewed_2026-11-18.json` adds MEXT research students, DAAD STEM master's, and Australian Research Training Program entries. Their official sources were checked on 18 November 2026; call status and other unverified details remain unknown. The earlier five records were not rechecked or updated.
+
+The three schemes and reviewed entries were applied to the local PostgreSQL catalogue after a preview of three inserts. A repeat preview reported three unchanged; the earlier batch reported five unchanged. The local catalogue has eight published entries. The API now exposes descriptions, and cards expand to show eligibility notes, funding, dates and source review information.
+
+Validation: the 17 offline importer tests, frontend build, and a fresh PostgreSQL migration/import/search integration test passed. The owner reported that browser checks passed for the three new entries, their details and official links, and the eight-result reset. Inspect Git status and GitHub for the current commit, push and merge state. A sensible next milestone is search and discovery improvements; do not assume every scholarship or deadline is indexed.
+
 ## PostgreSQL CI milestone - 18 November 2026
 
 GitHub Actions runs the offline importer tests, frontend build, and PostgreSQL 17 integration test on pushes and pull requests. The integration test requires an explicitly configured empty `scholarship_tracker_test` database; it does not delete tables or touch the local application database. It runs both Alembic migrations from scratch, checks preview and repeat imports, and checks search filters and hidden review states. Database host and port can be set with `POSTGRES_HOST` and `POSTGRES_PORT`; existing local defaults remain unchanged.
