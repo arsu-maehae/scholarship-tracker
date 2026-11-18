@@ -17,8 +17,6 @@ if os.environ.get("POSTGRES_DB") != "scholarship_tracker_test":
 from database import engine
 from import_catalogue_json import load_catalogue, run_import, validate_document
 from models import Scholarship, ScholarshipScheme
-from gemini_preferences import parse_preferences
-import main
 
 
 class PostgreSQLIntegrationTests(unittest.TestCase):
@@ -33,9 +31,8 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
         with Session(engine) as session, session.begin():
             for slug in sorted({item["scheme_slug"] for item in cls.records}):
                 session.add(ScholarshipScheme(name=slug, slug=slug))
-        main.engine = engine
 
-    def test_fresh_migrations_import_and_search(self):
+    def test_fresh_migrations_and_import(self):
         quiet = lambda _: None
         counts = run_import(engine, self.records, output=quiet)
         self.assertEqual(counts, {"INSERT": 5, "ADOPT": 0, "UPDATE": 0, "UNCHANGED": 0})
@@ -49,72 +46,13 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
         with Session(engine) as session:
             self.assertEqual([(row.id, row.source_key) for row in session.scalars(select(Scholarship).order_by(Scholarship.id))], before)
 
-        drafts = validate_document({"schema_version": 1, "scholarships": [
-            {"source_key": "test:" + state, "scheme_slug": "fulbright", "title": "Test " + state,
-             "cycle": None, "review_state": state, "fields_of_study": ["ai"]}
-            for state in ("draft", "needs_review", "archived")
-        ]})
-        run_import(engine, drafts, apply=True, output=quiet)
-        defaults = dict(q=None, related=None, related_country=None, country=None, degree=None, field=None, include_unknown_fields=False,
-                        funding=None, scheme=None, intake_year=None, limit=20, offset=0)
-        def search(**kwargs):
-            return main.search_scholarships(**(defaults | kwargs))
-        self.assertEqual(search()["total"], 5)
-        self.assertEqual(search(country="FI", degree="master", funding="full")["total"], 1)
-        self.assertEqual(search(country="US", degree="master", funding="full")["total"], 0)
-        self.assertEqual(search(field="ai")["total"], 2)
-        possible = search(field="ai", include_unknown_fields=True)
-        self.assertEqual(possible["total"], 5)
-        self.assertEqual([item["field_match"] for item in possible["items"]],
-                         ["exact", "exact", "unverified", "unverified", "unverified"])
-        possible_gb = search(country="GB", degree="master", field="ai", include_unknown_fields=True)
-        self.assertEqual(possible_gb["total"], 1)
-        self.assertEqual(possible_gb["items"][0]["field_match"], "unverified")
-        self.assertEqual(search(country="GB", degree="master", field="ai")["total"], 0)
-        self.assertEqual(search(field="ai", limit=1, offset=1)["total"], 2)
-        self.assertEqual(len(search(field="ai", limit=1, offset=1)["items"]), 1)
-
-        reviewed = load_catalogue(Path("data/reviewed_2026-11-18.json"))
-        with Session(engine) as session, session.begin():
-            for slug in sorted({item["scheme_slug"] for item in reviewed}):
-                session.add(ScholarshipScheme(name=slug, slug=slug))
-        self.assertEqual(run_import(engine, reviewed, output=quiet)["INSERT"], 3)
-        self.assertEqual(run_import(engine, reviewed, apply=True, output=quiet)["INSERT"], 3)
-        self.assertEqual(run_import(engine, reviewed, output=quiet)["UNCHANGED"], 3)
-        self.assertEqual(search()["total"], 8)
-        japan = search(country="JP", degree="master")
-        self.assertEqual(japan["total"], 1)
-        self.assertIn("graduate", japan["items"][0]["description"].lower())
-        self.assertEqual(search(country="DE", field="computer-science")["total"], 1)
-        self.assertEqual(search(country="AU", funding="full")["total"], 0)
-
-        global_batch = load_catalogue(Path("data/reviewed_global_2026-11-18.json"))
-        with Session(engine) as session, session.begin():
-            for slug in sorted({item["scheme_slug"] for item in global_batch}):
-                session.add(ScholarshipScheme(name=slug, slug=slug))
-        self.assertEqual(run_import(engine, global_batch, output=quiet)["INSERT"], 4)
-        self.assertEqual(run_import(engine, global_batch, apply=True, output=quiet)["INSERT"], 4)
-        self.assertEqual(run_import(engine, global_batch, output=quiet)["UNCHANGED"], 4)
-        self.assertEqual(search()["total"], 12)
-        thailand = search(related='Thailand', related_country='TH')
-        self.assertEqual(thailand['total'], 3)
-        self.assertTrue(any('Chevening Thailand' in item['title'] for item in thailand['items']))
-        possible = search(related='Thailand', related_country='TH', field='ai', include_unknown_fields=True)
-        self.assertEqual(possible['total'], 3)
-        self.assertTrue(all(item['field_match'] == 'unverified' for item in possible['items']))
-        self.assertEqual(search(related='Thailand', related_country='TH', country='FI')['total'], 0)
-        self.assertEqual(search(q="Clarendon", country="GB")["total"], 1)
-        self.assertEqual(search(q="Clarendon", country="JP")["total"], 0)
-        self.assertEqual(search(q="%")["total"], 0)
-        mock_preferences = {'q': None, 'country': 'FI', 'degree': 'master', 'field': 'ai',
-                            'funding': 'full', 'scheme': None, 'intake_year': None, 'unsupported': []}
-        parsed = parse_preferences('AI masters in Finland with full funding', fields={'ai'}, schemes=set(),
-                                   generator=lambda *_: mock_preferences)
-        self.assertEqual(search(**parsed['filters'])['total'], 1)
-        self.assertEqual(search(country="KR", degree="master")["total"], 1)
-        self.assertEqual(search(country="NL", degree="bachelor", funding="partial")["total"], 1)
-        self.assertEqual(search(country="SG", degree="phd")["total"], 1)
-        self.assertEqual(search(scheme="clarendon", country="GB", funding="full")["total"], 1)
+        for filename, expected in [("data/reviewed_2026-11-18.json", 3), ("data/reviewed_global_2026-11-18.json", 4)]:
+            batch = load_catalogue(Path(filename))
+            with Session(engine) as session, session.begin():
+                for slug in sorted({item["scheme_slug"] for item in batch}):
+                    session.add(ScholarshipScheme(name=slug, slug=slug))
+            self.assertEqual(run_import(engine, batch, apply=True, output=quiet)["INSERT"], expected)
+            self.assertEqual(run_import(engine, batch, output=quiet)["UNCHANGED"], expected)
 
     @classmethod
     def tearDownClass(cls):

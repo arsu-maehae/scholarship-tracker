@@ -4,7 +4,7 @@ Read docs/CODEX_HANDOFF.md before your first change. Read the actual repository 
 
 ## Product
 
-Build a useful scholarship discovery application for Arsu Maehae. The current product searches a curated PostgreSQL catalogue by study destination, degree, field, funding, scheme and intake. It does not discover every scholarship worldwide. Preserve truthful uncertainty and official source links.
+Build a private, local scholarship application tracker for Arsu Maehae. Follow docs/SCHOLARSHIP_TRACKER_BUILD_PLAN.md. Preserve the existing catalogue, source links, uncertainty, migration history, and personal data.
 
 ## Stack and local commands
 
@@ -35,5 +35,5 @@ Build a useful scholarship discovery application for Arsu Maehae. The current pr
 - Use feature branches and focused, meaningful commits. Preserve history; do not force-push or recreate old development activity.
 - Commit/push when the user authorizes that milestone. Never silently merge into main, publish or deploy.
 - Check git status, branch, remote and diff before committing. Stage task-specific files rather than all local files blindly.
-- Keep docs/CODEX_HANDOFF.md current when a milestone finishes. The user chose to defer the full README until later; do not make that the next task.
+- Keep docs/CODEX_HANDOFF.md current when a milestone finishes. Write the full README as the final delivery milestone.
 - Explain completed behavior and validation in plain English so Arsu can discuss his project in an interview. Continue routine authorized work without repeated permission questions.
