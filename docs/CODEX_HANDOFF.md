@@ -4,6 +4,54 @@ Prepared: 18 November 2026, Asia/Bangkok.
 
 This handoff supersedes the early planning-only Scholarship_Tracker_Project_Handoff.md. The application now exists and is working. Older planning documents describe features that have not been implemented. Current repository files and fresh command output are authoritative if they differ from this snapshot.
 
+## Country relevance search - 18 November 2026
+
+The owner clarified that searching Thailand means opportunities related to Thailand, including awards for Thai applicants to study abroad; it does not necessarily mean Thailand as the study destination. The Search with Gemini button handles a standalone country name locally as a catalogue relevance query: it looks for the country name (and, for Thailand, Thai) in titles, schemes, descriptions and funding notes, or matches a recorded study destination. The separate Study country filter retains its destination meaning and all other selected filters remain AND conditions. The UI states that relevance is not confirmed eligibility and coverage is incomplete.
+
+Live local PostgreSQL checks found three Thailand-related catalogue entries and three possible field=AI matches with unrecorded fields; adding Finland as study destination returned zero. Build, lint, a fresh PostgreSQL integration test and mocked UI interaction passed. No provider was enabled or additional Gemini request made. This remains a small catalogue search and does not satisfy the owner's desired worldwide live discovery; no free live search provider is configured. The older destination-only note below describes a superseded implementation.
+
+## Search result display correction - 18 November 2026
+
+The owner reported that a Thailand request needing clarification left the previous unfiltered scholarships visible. The UI now hides prior results when Gemini is loading or its search cannot be completed and explicitly says the search was not completed. A standalone country name entered using Search with Gemini is resolved locally as the study destination, with any other selected filters retained; no model request is made for that case. Conflicts still require clarification. The current local catalogue has no published entries with Thailand recorded as a study destination, including Thailand plus AI; zero results do not establish worldwide availability.
+
+Frontend build and lint passed. Mocked DOM interactions verified that Thailand applies country=TH, hides unrelated results, displays the zero state, and makes no Gemini call; a clarification response also hides prior results. No additional live Gemini call was made.
+
+## Website search issue - 18 November 2026
+
+The owner reported a Gemini request failure in the web UI after the earlier successful one-call CLI test. The previous generic error did not retain the upstream HTTP status, so the cause is not established. No additional live Gemini request was made during diagnosis. Local configuration flags indicate enabled, the model matches the configured allowlist, and a key is present; these checks do not prove provider acceptance. Mocked tests now verify that safe HTTP status information is displayed without exposing provider response bodies. Stop on quota, model-access or billing errors as instructed; do not change billing or silently retry.
+
+Separately, the owner's screenshot included both the Finland country filter and the keyword `Finland`. The current keyword search applies to titles, scheme names and descriptions, so the keyword excluded the EDISS row. Live local catalogue checks returned one result with Finland/master/AI filters and zero with the added keyword. The UI now explains the distinction.
+
+## Gemini website catalogue search - 18 November 2026
+
+The local website now provides a Search with Gemini button alongside Keywords. A local-only POST endpoint interprets the text as validated catalogue filters; the UI displays those filters and then searches the existing catalogue. Unsupported preferences and conflicts with selected filters stop the AI search. Requests happen only on the user's button press. Existing manual filters still work; Gemini does not find live web opportunities. The owner previously reported that the dedicated project has Free tier and no linked billing. The ignored local `.env` was updated to enable Gemini for this local feature, confirm that reported status, select `gemini-3.5-flash-lite`, and disable Brave. Defaults remain off. Grounding and paid fallbacks are disabled.
+
+The frontend build, lint, mocked Gemini endpoint and provider tests passed. A mocked DOM interaction confirmed the button applies the returned filters without invoking Brave; a local proxy test confirmed rejection of an untrusted origin. No additional live Gemini request was made for the website integration. The earlier one-call CLI test is recorded below. The AI endpoint is for local development only and is not a secure public deployment interface.
+
+## Gemini live CLI check - 18 November 2026
+
+The owner confirmed the API key saved in the ignored root `.env` belongs to the previously verified Free-tier project with billing disabled and no billing account ID. One authorized live CLI catalogue-search call using `gemini-3.5-flash-lite` succeeded. For "AI master's scholarships in Finland with full funding", the model returned FI, master, ai and full; the existing catalogue returned one EDISS record. No grounding, Brave search, retries or paid fallback were used. The AI settings were enabled only in the test process; persistent defaults remain disabled. This verifies one request, not future quota, billing status or worldwide search. The owner-reported billing status should be rechecked before future live use.
+
+## Gemini model update - 18 November 2026
+
+The owner reports that the dedicated Google project shows Free tier in AI Studio and no billing account linked in Cloud Billing. This is owner-reported; an API key alone does not establish it. Google's current pricing lists standard input/output as free for `gemini-3.5-flash-lite`, and its model documentation lists structured output support. The old `gemini-3.7-flash` endpoint now routes to another model, so the explicit model allowlist and example configuration were updated. Search grounding, Brave and paid fallbacks remain disabled. Do not infer that this particular project can access the model until a permitted test succeeds. Check the latest pricing before future use.
+
+## Gemini local preparation - 18 November 2026
+
+The owner requested zero spending: do not enable billing, paid providers or grounding. Gemini is off by default; no live API call was made and no dedicated project/free tier/no-billing status has been verified. The local CLI `backend/gemini_tool.py` implements natural-language catalogue filtering and evidence-linked official-page extraction, without a public AI endpoint or automatic publication. Source extraction is limited to three exact official HTTPS hosts and rejects redirects and non-public IP addresses. `docs/GEMINI.md` explains setup, limitations, local quotas, data use and manual verification. Model `gemini-3.7-flash` was listed on Google's free-tier pricing page on 18 November 2026; project-specific availability remains unverified. Mocked tests are in `backend/tests/test_gemini.py`; CI blocks real API calls. Brave requests are disabled by default through `BRAVE_SEARCH_ENABLED` under the zero-spending direction. Free worldwide live search is not established.
+
+## Worldwide web search - 18 November 2026
+
+Catalogue keyword search matches title, scheme and description together with existing filters. Submitting a search also requests separate, unverified web suggestions that appear within the app. A Brave Search API key is required in project-root `.env`; no key is currently configured. The key is server-side and never printed or returned. Web queries are sent to Brave, potentially using account quota or credits. Web suggestions are not guaranteed to match all filters and are never saved to the catalogue. See `docs/WEB_SEARCH.md` for setup, privacy and limitations.
+
+Frontend build, provider unit checks and fresh PostgreSQL integration checks passed locally. Live in-app search has not been tested because no provider key is configured. Git changes remain uncommitted on top of the global catalogue batch.
+
+## Global catalogue batch - 18 November 2026
+
+On `feat/global-catalogue-batch`, based on `feat/catalogue-review-details`, the reviewed batch `backend/data/reviewed_global_2026-11-18.json` adds Global Korea graduate, NL Scholarship, NUS Research Scholarship and Oxford Clarendon full-time graduate overviews. Official source checks and limitations are recorded in `docs/CATALOGUE_REVIEW.md`. Unknown call and intake details were not inferred; these are programme overviews, not promises of eligibility or live application availability.
+
+The local PostgreSQL preview proposed four inserts and no updates; applying it succeeded. Repeated previews showed four, three and five unchanged across the three catalogue batches. Live API checks returned twelve published entries and confirmed filters for each new record. The 17 offline tests and a fresh PostgreSQL migration/import/search integration test passed. The dedicated test container was removed. The new batch changes are uncommitted; inspect Git status before further work. The earlier feature branch was pushed but not merged. The catalogue remains small and does not cover all scholarships worldwide.
+
 ## Catalogue review and details milestone - 18 November 2026
 
 Milestones 5-7 are implemented on `feat/catalogue-review-details`. `docs/CATALOGUE_REVIEW.md` records the review workflow and official sources. The reviewed batch `backend/data/reviewed_2026-11-18.json` adds MEXT research students, DAAD STEM master's, and Australian Research Training Program entries. Their official sources were checked on 18 November 2026; call status and other unverified details remain unknown. The earlier five records were not rechecked or updated.

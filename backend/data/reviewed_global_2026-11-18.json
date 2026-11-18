@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "scholarships": [
+    {
+      "source_key": "global-korea:graduate:overview",
+      "scheme_slug": "global-korea",
+      "title": "Global Korea Scholarship for Graduate Degrees",
+      "cycle": "Programme overview - current call unverified",
+      "countries": [
+        "KR"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "unknown",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "Graduate scholarship routes at designated South Korean universities. The government overview lists nationality, age, education and academic requirements; check the current guidelines and embassy or university track for your country and subject.",
+      "funding_notes": "The government overview lists airfare, Korean-language training fees, tuition and monthly allowances. Award terms, eligibility and the availability of each benefit must be checked in the relevant year's guidelines.",
+      "official_url": "https://www.studyinkorea.go.kr/en/plan/scholarship.do",
+      "last_checked": "2026-11-18"
+    },
+    {
+      "source_key": "nl-scholarship:bachelor-master:overview",
+      "scheme_slug": "nl-scholarship",
+      "title": "NL Scholarship",
+      "cycle": "Programme overview - institution calls vary",
+      "countries": [
+        "NL"
+      ],
+      "degree_levels": [
+        "bachelor",
+        "master"
+      ],
+      "fields_of_study": null,
+      "funding_category": "partial",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "For applicants with non-EEA nationality applying to a full-time bachelor's or master's programme at a participating Dutch institution. Applicants must meet that institution's requirements and must not have a degree from an educational institution in the Netherlands. Check participating institutions and their current deadlines.",
+      "funding_notes": "The official overview states a EUR 5,000 award in the first year and says it is not a full-tuition scholarship. Check the institution's specific terms and remaining costs.",
+      "official_url": "https://www.studyinnl.org/finances/nl-scholarship",
+      "last_checked": "2026-11-18"
+    },
+    {
+      "source_key": "nus-research:graduate:overview",
+      "scheme_slug": "nus-research",
+      "title": "NUS Research Scholarship",
+      "cycle": "Programme overview - faculty calls vary",
+      "countries": [
+        "SG"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "unknown",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "For eligible research master's and PhD candidates at the National University of Singapore. Selection and application requirements depend on the faculty or school; check your chosen programme. International scholarship holders must meet Graduate Assistantship Programme requirements.",
+      "funding_notes": "NUS lists a full tuition fee waiver and a monthly stipend, with rates varying by degree and citizenship. Check the current award conditions and whether the stipend covers your actual living costs.",
+      "official_url": "https://nusgs.nus.edu.sg/scholarships/nus-research-scholarship/",
+      "last_checked": "2026-11-18"
+    },
+    {
+      "source_key": "clarendon:full-time-graduate:overview",
+      "scheme_slug": "clarendon",
+      "title": "Oxford Clarendon Scholarships - Full-time Graduate Study",
+      "cycle": "Programme overview - course deadlines vary",
+      "countries": [
+        "GB"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "full",
+      "call_status": "unknown",
+      "review_state": "published",
+      "description": "Oxford considers eligible applicants for new full-time master's and DPhil courses who apply by the relevant course funding deadline. Open across nationalities and subjects; selection is competitive. Check the course's December or January deadline and current requirements.",
+      "funding_notes": "Oxford states that Clarendon covers course fees in full and provides a living-cost grant for full-time scholars during the fee-liability period. Continuation charges and other costs can fall outside the award; check the offer and official terms.",
+      "official_url": "https://www.ox.ac.uk/admissions/graduate/fees-and-funding/funding/clarendon/applicants",
+      "last_checked": "2026-11-18"
+    }
+  ]
+}

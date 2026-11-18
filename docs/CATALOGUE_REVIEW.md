@@ -16,3 +16,10 @@ The catalogue is curated, not a complete list of awards. Research each record ag
 - `australian-rtp:research-degrees:overview`: [Australian Government Research Training Program](https://www.education.gov.au/research-block-grants/research-training-program). Research master's and doctoral routes, provider applications and variable benefits checked. Specific coverage, subject, intake and call depend on the provider and remain unverified.
 
 These overview entries describe pathways, not guaranteed availability for every applicant. The earlier five entries retain their earlier review dates; they were not rechecked for this batch.
+
+## Global batch reviewed 18 November 2026
+
+- `global-korea:graduate:overview`: [Study in Korea: GKS](https://www.studyinkorea.go.kr/en/plan/scholarship.do). The graduate route and listed benefits were checked. Current call, field and exact coverage are unverified; consult the applicable guidelines.
+- `nl-scholarship:bachelor-master:overview`: [Study in NL: NL Scholarship](https://www.studyinnl.org/finances/nl-scholarship). Non-EEA nationality, qualifying study and the EUR 5,000 first-year award were checked. The overview reports the 2027-28 application period open, but institutional deadlines and participating courses vary; call status remains unverified at this overview level.
+- `nus-research:graduate:overview`: [NUS Research Scholarship](https://nusgs.nus.edu.sg/scholarships/nus-research-scholarship/). Graduate research degrees, tuition waiver, stipend and the international graduate assistantship requirement were checked. Faculty deadlines and actual living costs vary.
+- `clarendon:full-time-graduate:overview`: [Oxford Clarendon applicant information](https://www.ox.ac.uk/admissions/graduate/fees-and-funding/funding/clarendon/applicants). Full-time master's and DPhil eligibility, course fees and living-cost grant were checked. Course deadlines and continuation charges require individual verification.

@@ -12,6 +12,10 @@ SCHEMES = [
     {"name": "Japanese Government (MEXT)", "slug": "mext"},
     {"name": "DAAD", "slug": "daad"},
     {"name": "Australian Government Research Training Program", "slug": "australian-rtp"},
+    {"name": "Global Korea Scholarship", "slug": "global-korea"},
+    {"name": "NL Scholarship", "slug": "nl-scholarship"},
+    {"name": "NUS Research Scholarship", "slug": "nus-research"},
+    {"name": "Oxford Clarendon Fund", "slug": "clarendon"},
 ]
 
 

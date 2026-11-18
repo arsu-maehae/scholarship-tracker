@@ -1,12 +1,17 @@
 from typing import Literal
+import os
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import text, select, func, or_, case
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from database import engine
 from models import ScholarshipScheme, Scholarship
+from web_search import WebSearchError, search_web
+from gemini_client import AIError
+from gemini_preferences import parse_preferences
 
 app = FastAPI(
     title="Scholarship Discovery API",
@@ -71,8 +76,46 @@ def filter_options() -> dict:
     return {"fields": fields}
 
 
+@app.get("/api/web-opportunities")
+def web_opportunities(q: str = Query(min_length=1, max_length=300)) -> dict:
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=422, detail="Search must not be blank")
+    if os.environ.get("BRAVE_SEARCH_ENABLED", "").lower() != "true":
+        raise HTTPException(status_code=503, detail="Web search is disabled")
+    key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+    if not key:
+        raise HTTPException(status_code=503, detail="In-app web search is not configured")
+    try:
+        return {"items": search_web(query, key)}
+    except WebSearchError:
+        raise HTTPException(status_code=502, detail="Web search is temporarily unavailable") from None
+
+
+class NaturalSearchRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+@app.post("/api/catalogue-preferences")
+def catalogue_preferences(body: NaturalSearchRequest, request: Request) -> dict:
+    # This is a local development feature, not an authenticated public AI API.
+    if (request.client is None or request.client.host not in ('127.0.0.1', '::1')
+            or request.headers.get('host') not in ('127.0.0.1:8000', 'localhost:8000', '[::1]:8000')
+            or request.headers.get('origin') not in ('http://127.0.0.1:5173', 'http://localhost:5173')
+            or request.headers.get('x-requested-with') != 'ScholarshipDiscovery'):
+        raise HTTPException(status_code=403, detail='Available only from the local application')
+    try:
+        return parse_preferences(body.text, fields=set(filter_options()['fields']),
+                                 schemes={item['slug'] for item in list_schemes()})
+    except AIError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from None
+
+
 @app.get("/api/scholarships")
 def search_scholarships(
+    q: str | None = Query(default=None, max_length=100),
+    related: str | None = Query(default=None, min_length=1, max_length=100),
+    related_country: str | None = Query(default=None, pattern=r'^[A-Za-z]{2}$'),
     country: str | None = Query(
         default=None, pattern=r"^[A-Za-z]{2}$"
     ),
@@ -108,6 +151,37 @@ def search_scholarships(
         )
         .where(Scholarship.review_state == "published")
     )
+
+    if q is not None:
+        cleaned = q.strip()
+        if not cleaned:
+            raise HTTPException(status_code=422, detail="Search must not be blank")
+        escaped = cleaned.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped}%"
+        statement = statement.where(or_(
+            Scholarship.title.ilike(pattern, escape="\\"),
+            ScholarshipScheme.name.ilike(pattern, escape="\\"),
+            Scholarship.description.ilike(pattern, escape="\\"),
+        ))
+
+    if related is not None:
+        term = related.strip().lower()
+        if not term:
+            raise HTTPException(status_code=422, detail='Related search must not be blank')
+        terms = [term]
+        if term == 'thailand':
+            terms.append('thai')
+        predicates = []
+        for word in terms:
+            escaped = word.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            pattern = f'%{escaped}%'
+            predicates.extend([Scholarship.title.ilike(pattern, escape='\\'),
+                               ScholarshipScheme.name.ilike(pattern, escape='\\'),
+                               Scholarship.description.ilike(pattern, escape='\\'),
+                               Scholarship.funding_notes.ilike(pattern, escape='\\')])
+        if related_country:
+            predicates.append(Scholarship.countries.contains([related_country.upper()]))
+        statement = statement.where(or_(*predicates))
 
     if country:
         statement = statement.where(

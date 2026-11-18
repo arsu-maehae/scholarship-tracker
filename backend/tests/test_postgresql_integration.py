@@ -17,6 +17,7 @@ if os.environ.get("POSTGRES_DB") != "scholarship_tracker_test":
 from database import engine
 from import_catalogue_json import load_catalogue, run_import, validate_document
 from models import Scholarship, ScholarshipScheme
+from gemini_preferences import parse_preferences
 import main
 
 
@@ -54,7 +55,7 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
             for state in ("draft", "needs_review", "archived")
         ]})
         run_import(engine, drafts, apply=True, output=quiet)
-        defaults = dict(country=None, degree=None, field=None, include_unknown_fields=False,
+        defaults = dict(q=None, related=None, related_country=None, country=None, degree=None, field=None, include_unknown_fields=False,
                         funding=None, scheme=None, intake_year=None, limit=20, offset=0)
         def search(**kwargs):
             return main.search_scholarships(**(defaults | kwargs))
@@ -86,6 +87,34 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
         self.assertIn("graduate", japan["items"][0]["description"].lower())
         self.assertEqual(search(country="DE", field="computer-science")["total"], 1)
         self.assertEqual(search(country="AU", funding="full")["total"], 0)
+
+        global_batch = load_catalogue(Path("data/reviewed_global_2026-11-18.json"))
+        with Session(engine) as session, session.begin():
+            for slug in sorted({item["scheme_slug"] for item in global_batch}):
+                session.add(ScholarshipScheme(name=slug, slug=slug))
+        self.assertEqual(run_import(engine, global_batch, output=quiet)["INSERT"], 4)
+        self.assertEqual(run_import(engine, global_batch, apply=True, output=quiet)["INSERT"], 4)
+        self.assertEqual(run_import(engine, global_batch, output=quiet)["UNCHANGED"], 4)
+        self.assertEqual(search()["total"], 12)
+        thailand = search(related='Thailand', related_country='TH')
+        self.assertEqual(thailand['total'], 3)
+        self.assertTrue(any('Chevening Thailand' in item['title'] for item in thailand['items']))
+        possible = search(related='Thailand', related_country='TH', field='ai', include_unknown_fields=True)
+        self.assertEqual(possible['total'], 3)
+        self.assertTrue(all(item['field_match'] == 'unverified' for item in possible['items']))
+        self.assertEqual(search(related='Thailand', related_country='TH', country='FI')['total'], 0)
+        self.assertEqual(search(q="Clarendon", country="GB")["total"], 1)
+        self.assertEqual(search(q="Clarendon", country="JP")["total"], 0)
+        self.assertEqual(search(q="%")["total"], 0)
+        mock_preferences = {'q': None, 'country': 'FI', 'degree': 'master', 'field': 'ai',
+                            'funding': 'full', 'scheme': None, 'intake_year': None, 'unsupported': []}
+        parsed = parse_preferences('AI masters in Finland with full funding', fields={'ai'}, schemes=set(),
+                                   generator=lambda *_: mock_preferences)
+        self.assertEqual(search(**parsed['filters'])['total'], 1)
+        self.assertEqual(search(country="KR", degree="master")["total"], 1)
+        self.assertEqual(search(country="NL", degree="bachelor", funding="partial")["total"], 1)
+        self.assertEqual(search(country="SG", degree="phd")["total"], 1)
+        self.assertEqual(search(scheme="clarendon", country="GB", funding="full")["total"], 1)
 
     @classmethod
     def tearDownClass(cls):
