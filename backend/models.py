@@ -88,3 +88,40 @@ class Scholarship(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+class Application(Base):
+    __tablename__ = 'applications'
+    __table_args__ = (CheckConstraint("status IN ('researching','preparing','submitted','result_received','withdrawn')", name='ck_application_status'),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(250))
+    provider: Mapped[str | None] = mapped_column(String(250))
+    source_url: Mapped[str | None] = mapped_column(Text)
+    cycle: Mapped[str | None] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(30), server_default='researching')
+    notes: Mapped[str | None] = mapped_column(Text)
+    next_action: Mapped[str | None] = mapped_column(Text)
+    archived: Mapped[bool] = mapped_column(server_default='false')
+    submission_date: Mapped[date | None] = mapped_column(Date)
+    interview_date: Mapped[date | None] = mapped_column(Date)
+    outcome: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ApplicationDeadline(Base):
+    __tablename__ = 'application_deadlines'
+    __table_args__ = (CheckConstraint("kind IN ('official','personal')", name='ck_deadline_kind'),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey('applications.id', ondelete='CASCADE'), index=True)
+    label: Mapped[str] = mapped_column(String(250))
+    kind: Mapped[str] = mapped_column(String(20))
+    due_date: Mapped[date | None] = mapped_column(Date)
+    due_time: Mapped[str | None] = mapped_column(String(20))
+    timezone: Mapped[str | None] = mapped_column(String(100))
+
+
+class ApplicationTask(Base):
+    __tablename__ = 'application_tasks'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey('applications.id', ondelete='CASCADE'), index=True)
+    title: Mapped[str] = mapped_column(String(250))
+    due_date: Mapped[date | None] = mapped_column(Date)
+    completed: Mapped[bool] = mapped_column(server_default='false')

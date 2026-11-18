@@ -17,3 +17,6 @@ def database_health():
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail='Database connection unavailable') from None
     return {'status': 'ok', 'database': name}
+
+from tracker import router as tracker_router
+app.include_router(tracker_router)

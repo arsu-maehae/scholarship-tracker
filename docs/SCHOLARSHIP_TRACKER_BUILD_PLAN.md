@@ -116,7 +116,7 @@ Update the table in this file as work advances. For each stage record the actual
 | Milestone | Status at handoff | Evidence |
 | --- | --- | --- |
 | 1. Pivot and cleanup | Complete locally | Discovery paths retired; tracker home established. Build, lint, 17 importer tests, fresh PostgreSQL migrations/import and local startup checks passed; existing 12 published rows retained. |
-| 2. Manual tracker | Pending | |
+| 2. Manual tracker | In progress; browser walkthrough pending | Additive migration, tracker API and manual UI implemented. Fresh and upgrade PostgreSQL checks, service-restart persistence, importer tests, frontend build/lint and mocked UI passed; local database migrated with 12 catalogue entries preserved. Browser automation unavailable. |
 | 3. Link intake | Pending | Reuse Gemini CLI components if present |
 | 4. Planning | Pending | |
 | 5. Delivery | Pending | |
