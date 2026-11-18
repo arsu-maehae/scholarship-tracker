@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "scholarships": [
+    {
+      "title": "EDISS - Erasmus Mundus scholarship",
+      "cycle": "2027-2029",
+      "intake_year": 2027,
+      "description": "Data science and machine learning integrated with software engineering. Consortium study locations depend on the selected mobility route.",
+      "countries": [
+        "FI",
+        "SE",
+        "IT",
+        "ES"
+      ],
+      "degree_levels": [
+        "master"
+      ],
+      "fields_of_study": [
+        "ai",
+        "data-science",
+        "software-engineering"
+      ],
+      "funding_category": "full",
+      "funding_notes": "Erasmus Mundus route: participation-cost waiver, insurance and EUR 1,400/month for up to 24 months. Competitive selection.",
+      "call_status": "unknown",
+      "review_state": "published",
+      "official_url": "https://www.master-ediss.eu/scholarship/",
+      "source_key": "erasmus-mundus:ediss:2027-2029",
+      "scheme_slug": "erasmus-mundus",
+      "last_checked": "2026-11-17"
+    },
+    {
+      "scheme_slug": "chevening",
+      "title": "Chevening Thailand Scholarship",
+      "cycle": "2027-2028",
+      "intake_year": 2027,
+      "countries": [
+        "GB"
+      ],
+      "degree_levels": [
+        "master"
+      ],
+      "fields_of_study": null,
+      "funding_category": "full",
+      "call_status": "closed",
+      "description": "For Thai applicants pursuing eligible one-year taught master's courses in the UK. This is a scheme-level opportunity, not a particular university course. Check the current eligibility and course rules.",
+      "funding_notes": "Tuition and living support, approved travel, visa and specified allowances. Individual award terms apply. The Thailand page marks the 2027-2028 application round closed. Broad course coverage; field tags are not exhaustively indexed. Funding source: https://www.chevening.org/faqs/what-does-a-chevening-scholarship-cover/",
+      "official_url": "https://www.chevening.org/scholarship/thailand/",
+      "source_key": "chevening:thailand:2027-2028",
+      "review_state": "published",
+      "last_checked": "2026-11-17"
+    },
+    {
+      "scheme_slug": "fulbright",
+      "title": "Fulbright Thai Graduate Scholarship (TGS)",
+      "cycle": "Programme overview - dated call unverified",
+      "intake_year": null,
+      "countries": [
+        "US"
+      ],
+      "degree_levels": [
+        "master",
+        "phd"
+      ],
+      "fields_of_study": null,
+      "funding_category": "partial",
+      "call_status": "unknown",
+      "description": "US graduate study for eligible Thai applicants, excluding clinical practice. Master's and PhD routes are separate. Check eligibility on the official page.",
+      "funding_notes": "Usually partial support. Annual caps: USD 46,000 for master's or USD 40,000 for PhD, each for up to two years. Other benefits include flights, insurance and visa sponsorship. Uncovered costs may remain. Dated intake and opening are unverified; broad field coverage is not indexed.",
+      "official_url": "https://www.fulbrightthai.org/tgs",
+      "source_key": "fulbright:thai-graduate:overview",
+      "review_state": "published",
+      "last_checked": "2026-11-17"
+    },
+    {
+      "scheme_slug": "thai-government",
+      "title": "OCSC regional government scholarship - pre-study appointment (overview)",
+      "cycle": "FY2570",
+      "intake_year": null,
+      "countries": null,
+      "degree_levels": [
+        "master"
+      ],
+      "fields_of_study": null,
+      "funding_category": "unknown",
+      "call_status": "open",
+      "description": "Official FY2570 regional pre-study appointment call. Overview only: individual award codes specify destination, subject, agency and eligibility. Fiscal year is not necessarily the academic intake year. Do not treat Thailand as the study destination.",
+      "funding_notes": "OVERVIEW ONLY: select an individual award code before assessing eligibility, destination, subject, funding and service obligations. These details have not been indexed. OCSC lists this master's call as open through 29 December 2026; closing time is not verified. Funding coverage remains unverified for a specific award. Destination and field filters will omit this overview.",
+      "official_url": "https://www.ocsc.go.th/scholarships/degree-scholarships/",
+      "source_key": "thai-government:regional-pre-study:fy2570",
+      "review_state": "published",
+      "last_checked": "2026-11-17"
+    },
+    {
+      "scheme_slug": "erasmus-mundus",
+      "title": "EMAI - Artificial Intelligence programme and funding overview",
+      "cycle": "Programme overview - next award unverified",
+      "intake_year": null,
+      "countries": [
+        "ES",
+        "IT",
+        "NL",
+        "SI"
+      ],
+      "degree_levels": [
+        "master"
+      ],
+      "fields_of_study": [
+        "ai",
+        "data-science",
+        "robotics",
+        "cybersecurity"
+      ],
+      "funding_category": "unknown",
+      "call_status": "unknown",
+      "description": "Joint AI master's coordinated by UPF with Sapienza, Radboud and Ljubljana. Consortium destinations are listed; the actual study route depends on the programme. Funding for the next cohort must be verified.",
+      "funding_notes": "The FAQ distinguishes Erasmus Mundus scholarships with living support from tuition fee waivers and refers to funding in the first four editions. This does not establish funding for a later intake. Homepage says applications are closed and the next round will open in November 2026, without an exact opening date. Next-cohort funding, intake and call status remain unverified. Sources: https://www.upf.edu/web/emai/faqs and https://www.upf.edu/web/emai/academic-information",
+      "official_url": "https://www.upf.edu/web/emai",
+      "source_key": "erasmus-mundus:emai:funding-overview",
+      "review_state": "published",
+      "last_checked": "2026-11-17"
+    }
+  ]
+}

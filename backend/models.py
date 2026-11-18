@@ -51,6 +51,12 @@ class Scholarship(Base):
         index=True,
     )
 
+    source_key: Mapped[str | None] = mapped_column(
+        String(200),
+        unique=True,
+        nullable=True,
+    )
+
     title: Mapped[str] = mapped_column(String(250))
     cycle: Mapped[str | None] = mapped_column(String(100))
     intake_year: Mapped[int | None]
