@@ -152,3 +152,14 @@ class ChecklistItem(Base):
     scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
     label: Mapped[str] = mapped_column(String(250), nullable=False)
     completed: Mapped[bool] = mapped_column(server_default='false')
+
+
+class ExtractionAttempt(Base):
+    __tablename__ = 'extraction_attempts'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
+    input_kind: Mapped[str] = mapped_column(String(10), nullable=False)
+    source_url: Mapped[str | None] = mapped_column(Text)
+    outcome: Mapped[str] = mapped_column(String(20), nullable=False)
+    suggestions_json: Mapped[str] = mapped_column(Text, nullable=False, server_default='{}')
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

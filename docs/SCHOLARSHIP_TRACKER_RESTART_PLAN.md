@@ -116,5 +116,6 @@ Saving a URL and allowing the server to fetch it are separate operations. Apply 
 
 ## Current progress (2026-11-19)
 
-- URL-first tracking is implemented and passed disposable PostgreSQL and synthetic HTTP persistence checks; browser walkthrough pending.
-- Deterministic extraction and delivery remain in progress.
+- URL-first tracking: implemented; disposable PostgreSQL and synthetic HTTP persistence checks passed. Browser walkthrough pending.
+- Deterministic suggestions and pasted-text fallback: implemented; mocked fetch, ambiguous date, failure preservation and URL safety checks passed. The single live Oxford smoke test redirected and was safely refused; remote extraction remains unverified.
+- Delivery: README, build, lint and backend checks prepared. Desktop/narrow browser checks remain unavailable because the browser-access host failed. Do not mark the release fully verified until this gap is addressed.

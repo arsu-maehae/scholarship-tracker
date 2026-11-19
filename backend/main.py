@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+﻿from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
@@ -19,4 +19,5 @@ def database_health():
     return {'status': 'ok', 'database': name}
 
 from tracked import router as tracked_router
+import extraction  # Register extraction endpoints on the tracker router.
 app.include_router(tracked_router)
