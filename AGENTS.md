@@ -4,7 +4,7 @@ Read docs/CODEX_HANDOFF.md before your first change. Read the actual repository 
 
 ## Product
 
-The previous build plan is paused. Do not implement new features or resume its milestones until the owner defines a new scope. Preserve the existing catalogue, source links, uncertainty, migration history, and personal data.
+Follow docs/SCHOLARSHIP_TRACKER_RESTART_PLAN.md. The earlier build plan remains paused. Preserve the existing catalogue, source links, uncertainty, migration history, and personal data.
 
 ## Stack and local commands
 

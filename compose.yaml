@@ -1,12 +1,13 @@
+name: scholarship-tracker-restart
 services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:-tracker_local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_tracker_only}
+      POSTGRES_DB: ${POSTGRES_DB:-scholarship_tracker_restart}
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

@@ -9,11 +9,11 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 database_url = URL.create(
     drivername="postgresql+psycopg",
-    username=os.environ["POSTGRES_USER"],
-    password=os.environ["POSTGRES_PASSWORD"],
+    username=os.environ.get("POSTGRES_USER", "tracker_local"),
+    password=os.environ.get("POSTGRES_PASSWORD", "local_tracker_only"),
     host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-    port=int(os.environ.get("POSTGRES_PORT", "5433")),
-    database=os.environ["POSTGRES_DB"],
+    port=int(os.environ.get("POSTGRES_PORT", "5434")),
+    database=os.environ.get("POSTGRES_DB", "scholarship_tracker_restart"),
 )
 
 engine = create_engine(

@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
@@ -18,5 +18,5 @@ def database_health():
         raise HTTPException(status_code=503, detail='Database connection unavailable') from None
     return {'status': 'ok', 'database': name}
 
-from tracker import router as tracker_router
-app.include_router(tracker_router)
+from tracked import router as tracked_router
+app.include_router(tracked_router)

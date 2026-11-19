@@ -1,4 +1,7 @@
 .env
+.env.*
+*.dump
+*.sqlite3
 backend/.venv/
 **/__pycache__/
 frontend/node_modules/

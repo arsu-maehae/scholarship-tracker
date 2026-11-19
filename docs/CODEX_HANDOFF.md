@@ -1,5 +1,5 @@
 # Restart handoff
 
-The owner paused the previous build plan and will define a new scope. Do not resume the previous milestones. Preserve the existing catalogue, personal records, source links, and Alembic migration history. Do not reset the local database or remove Docker volumes.
+The owner authorized `docs/SCHOLARSHIP_TRACKER_RESTART_PLAN.md`; the earlier build plan remains paused. Work in the `restart/scholarship-tracker` worktree, preserve the original checkout, database, source keys and migration history, and never enable paid services or AI.
 
-This restart branch starts from commit f134de0, whose manual tracker foundation passed GitHub Actions. The already-applied 2a0b2c3d4e5f migration is retained for compatibility with the existing local database; it does not activate source intake. The prior work is preserved in local branch backup/scholarship-tracker-pre-restart. No live AI calls or paid services should be enabled during baseline preparation.
+URL-first tracking is implemented; deterministic source suggestions are a later step on an isolated Compose database `scholarship_tracker_restart` (localhost port 5434). Do not use the original database for smoke tests. Preserve all migrations including 2a0b2c3d4e5f. Unit, disposable PostgreSQL, frontend build/lint and synthetic HTTP/restart checks passed. A browser walkthrough remains pending: the browser-access host was unavailable. Optional page extraction has not yet been implemented in this commit. Do not mark the browser or remote extraction checks complete without evidence.

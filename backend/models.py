@@ -125,3 +125,30 @@ class ApplicationTask(Base):
     title: Mapped[str] = mapped_column(String(250))
     due_date: Mapped[date | None] = mapped_column(Date)
     completed: Mapped[bool] = mapped_column(server_default='false')
+
+
+class TrackedScholarship(Base):
+    __tablename__ = 'tracked_scholarships'
+    __table_args__ = (CheckConstraint("status IN ('saved','preparing','submitted','accepted','rejected')", name='ck_tracked_status'),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    url_key: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    title: Mapped[str | None] = mapped_column(String(250))
+    provider: Mapped[str | None] = mapped_column(String(250))
+    intake: Mapped[str | None] = mapped_column(String(250))
+    deadline: Mapped[date | None] = mapped_column(Date)
+    funding: Mapped[str | None] = mapped_column(Text)
+    eligibility: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), server_default='saved')
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ChecklistItem(Base):
+    __tablename__ = 'tracked_checklist'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
+    label: Mapped[str] = mapped_column(String(250), nullable=False)
+    completed: Mapped[bool] = mapped_column(server_default='false')

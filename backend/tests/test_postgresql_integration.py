@@ -1,4 +1,4 @@
-﻿"""Integration checks against an explicitly configured, empty disposable PostgreSQL database.
+"""Integration checks against an explicitly configured, empty disposable PostgreSQL database.
 
 Run separately from the SQLite unit suite. The test never drops or clears tables.
 """
@@ -17,7 +17,6 @@ if os.environ.get("POSTGRES_DB") != "scholarship_tracker_test":
 from database import engine
 from import_catalogue_json import load_catalogue, run_import, validate_document
 from models import Scholarship, ScholarshipScheme
-import tracker
 
 
 class PostgreSQLIntegrationTests(unittest.TestCase):
@@ -54,24 +53,6 @@ class PostgreSQLIntegrationTests(unittest.TestCase):
                     session.add(ScholarshipScheme(name=slug, slug=slug))
             self.assertEqual(run_import(engine, batch, apply=True, output=quiet)["INSERT"], expected)
             self.assertEqual(run_import(engine, batch, output=quiet)["UNCHANGED"], expected)
-
-        body = tracker.ApplicationInput(title='Test application', source_url='https://example.org/award', cycle='2030', notes='Private test note', next_action='Prepare documents')
-        app = tracker.create_application(body)
-        task = tracker.create_task(app['id'], tracker.TaskInput(title='Request transcript'))
-        tracker.create_deadline(app['id'], tracker.DeadlineInput(label='Submit', kind='official', due_date='2030-01-10'))
-        tracker.update_task(app['id'], task['id'], tracker.TaskInput(title='Request transcript', completed=True))
-        rows = tracker.list_applications()
-        self.assertEqual(rows[0]['notes'], 'Private test note')
-        self.assertTrue(rows[0]['tasks'][0]['completed'])
-        self.assertEqual(str(rows[0]['deadlines'][0]['due_date']), '2030-01-10')
-        with self.assertRaises(tracker.HTTPException) as duplicate:
-            tracker.create_application(body)
-        self.assertEqual(duplicate.exception.status_code, 409)
-        tracker.update_application(app['id'], body.model_copy(update={'archived': True, 'status':'submitted'}))
-        self.assertEqual(tracker.list_applications(), [])
-        self.assertEqual(len(tracker.list_applications(archived=True)), 1)
-        tracker.update_application(app['id'], body.model_copy(update={'archived': False}))
-        self.assertEqual(len(tracker.list_applications()), 1)
 
     @classmethod
     def tearDownClass(cls):
