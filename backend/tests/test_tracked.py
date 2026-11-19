@@ -13,7 +13,7 @@ class URLTests(unittest.TestCase):
         self.assertNotEqual(tracked.normalize_url('https://example.com/a'),tracked.normalize_url('https://example.com/a/'))
         self.assertNotEqual(tracked.normalize_url('https://example.com/a?x=1'),tracked.normalize_url('https://example.com/a?x=2'))
     def test_bad_urls_and_extra_edit_fields_rejected(self):
-        for url in ('javascript:alert(1)','https://user:pass@example.org','https://example.org:bad','https://exa mple.org'):
+        for url in ('javascript:alert(1)','https://user:pass@example.org','https://example.org:bad','https://exa mple.org','https://localhost','http://127.0.0.1','https://'+('x'*70)+'.example.org'):
             with self.assertRaises(ValueError): tracked.normalize_url(url)
         with self.assertRaises(ValidationError): tracked.EditScholarship.model_validate({'source_url':'https://example.org'})
 

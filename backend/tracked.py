@@ -39,7 +39,7 @@ def normalize_url(value: str) -> str:
         host=host.lower()
         if port and port != (443 if u.scheme.lower()=='https' else 80): host += ':'+str(port)
         return urlunsplit((u.scheme.lower(),host,u.path,u.query,''))
-    except ValueError:
+    except (ValueError, UnicodeError):
         raise ValueError('Enter a valid public HTTP or HTTPS URL without credentials') from None
 
 class SaveLink(BaseModel):

@@ -53,7 +53,10 @@ def suggest(blocks):
         for match in re.finditer(r'\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b',entry['excerpt'],re.I):
             try: dates.add(datetime.strptime(match.group(1),'%d %B %Y').date().isoformat())
             except ValueError: pass
-    suggestions['proposed_deadline']=next(iter(dates)) if len(dates)==1 and len(suggestions['deadline'])==1 else None
+    only_excerpt=suggestions['deadline'][0]['excerpt'] if len(suggestions['deadline'])==1 else ''
+    months=re.findall(r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b',only_excerpt,re.I)
+    ambiguous=re.search(r'\b(or|between|depending|alternatively|extensions?)\b',only_excerpt,re.I)
+    suggestions['proposed_deadline']=next(iter(dates)) if len(dates)==1 and len(months)==1 and not ambiguous else None
     return suggestions
 
 def attempt_dict(row):

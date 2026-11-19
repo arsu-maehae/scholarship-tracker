@@ -17,6 +17,8 @@ class ExtractionRuleTests(unittest.TestCase):
     def test_competing_dates_are_not_confirmed(self):
         result=suggest(text_blocks('Deadline 12 January 2030\nDeadline 15 January 2031'))
         self.assertIsNone(result['proposed_deadline'])
+        result=suggest(text_blocks('Deadline 12 January 2030 or 15 February'))
+        self.assertIsNone(result['proposed_deadline'])
     def test_missing_and_unapproved_host(self):
         self.assertFalse(suggest(text_blocks('No details here'))['funding'])
         with self.assertRaises(FetchError): fetch_official_html('https://example.com/')
