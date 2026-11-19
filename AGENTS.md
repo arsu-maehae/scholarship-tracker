@@ -4,7 +4,7 @@ Read docs/CODEX_HANDOFF.md before your first change. Read the actual repository 
 
 ## Product
 
-Build a private, local scholarship application tracker for Arsu Maehae. Follow docs/SCHOLARSHIP_TRACKER_BUILD_PLAN.md. Preserve the existing catalogue, source links, uncertainty, migration history, and personal data.
+The previous build plan is paused. Do not implement new features or resume its milestones until the owner defines a new scope. Preserve the existing catalogue, source links, uncertainty, migration history, and personal data.
 
 ## Stack and local commands
 
@@ -20,7 +20,7 @@ Build a private, local scholarship application tracker for Arsu Maehae. Follow d
 
 - Continue the working app; do not scaffold it again or replace the stack.
 - Preserve unrelated local changes. Inspect diffs before editing or staging.
-- Never print .env contents, expose credentials, or commit virtual environments, node_modules or build output. Use .env.example placeholders for setup guidance.
+- Never print .env contents, expose credentials, or commit virtual environments, node_modules or build output. Use placeholders for setup guidance.
 - Use Alembic for schema changes. Never reset the real database or delete its Docker volume to solve a migration problem. Preserve applied migrations.
 - source_key is a stable opportunity/call identifier. Correcting titles does not change it; new cycles receive new keys. Preserve IDs during adoption.
 - Default importer behavior is preview; --apply writes. Validate the entire batch and apply atomically. Draft/needs_review/archived entries stay out of public search.
@@ -35,5 +35,5 @@ Build a private, local scholarship application tracker for Arsu Maehae. Follow d
 - Use feature branches and focused, meaningful commits. Preserve history; do not force-push or recreate old development activity.
 - Commit/push when the user authorizes that milestone. Never silently merge into main, publish or deploy.
 - Check git status, branch, remote and diff before committing. Stage task-specific files rather than all local files blindly.
-- Keep docs/CODEX_HANDOFF.md current when a milestone finishes. Write the full README as the final delivery milestone.
+- Keep docs/CODEX_HANDOFF.md current when work finishes.
 - Explain completed behavior and validation in plain English so Arsu can discuss his project in an interview. Continue routine authorized work without repeated permission questions.
