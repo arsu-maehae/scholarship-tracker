@@ -106,13 +106,13 @@ Saving a URL and allowing the server to fetch it are separate operations. Apply 
 
 ## Release checklist
 
-- [ ] Original work and data preserved. Restart branch and isolated database verified.
-- [ ] A link saves even if the source is unreachable. Saved data survives a restart.
-- [ ] Status, notes, checklist, archive/restore, and deadline views work.
-- [ ] Supported page extraction produces suggestions with evidence. Pasted text and manual entry work when fetching is unavailable.
-- [ ] An ambiguous date stays unconfirmed. Fetch failures and retries preserve user edits.
+- [x] Original work and data preserved. Restart branch and isolated database verified.
+- [x] A link saves even if the source is unreachable. Saved data survives a restart (API test).
+- [ ] Status, notes, checklist, archive/restore, and deadline views work (API checked; browser walkthrough pending).
+- [ ] Supported page extraction produces suggestions with evidence. Pasted text and manual entry work when fetching is unavailable (fixture and API checked; live/browser checks pending).
+- [x] An ambiguous date stays unconfirmed. Fetch failures and retries preserve user edits (backend tests).
 - [ ] Fresh database migrations, backend tests, frontend build/lint, and browser smoke checks completed or reported with concrete blockers.
-- [ ] README startup steps verified. Tested commits on the GitHub restart branch or local SHAs and push blocker reported.
+- [ ] README startup steps verified. Tested commits on the GitHub restart branch or local SHAs and push blocker reported (browser and live-page limitations remain).
 
 ## Current progress (2026-11-19)
 
