@@ -54,14 +54,22 @@ class ExtractionRuleTests(unittest.TestCase):
           <h3>Erasmus+ Scholarship Holders</h3>
           <p>Scholarship holders receive a monthly scholarship of 1400€ for 24 months, and health insurance and university fees are covered.</p>
           <h2>Required documentation for the online application</h2>
-          <ul><li>Clear copy of a valid passport</li><li>CV</li><li>Statement of Purpose</li></ul>
+          <p>The applicant must upload the following documents.</p>
+          <ul><li>Clear copy of a valid passport</li><li>CV</li><li>Statement of Purpose</li>
+          <li>First university degree diploma and transcript</li><li>Documentation of language proficiency</li></ul>
           <h2>Application deadlines</h2>
           <p>20 December 2026 for scholarship applicants</p>
           <p>15 July 2027 for fee-paying applicants</p>
         </main>"""
         result = suggest(html_blocks(page))
         self.assertIn('1400€', result['funding'][0]['excerpt'])
-        self.assertEqual(result['documents'][0]['excerpt'], 'Clear copy of a valid passport')
+        self.assertEqual([entry['excerpt'] for entry in result['documents']], [
+            'Clear copy of a valid passport',
+            'CV',
+            'Statement of Purpose',
+            'First university degree diploma and transcript',
+            'Documentation of language proficiency',
+        ])
         self.assertIsNone(result['proposed_deadline'])
 
     def test_pasted_headings_include_unlabelled_values(self):

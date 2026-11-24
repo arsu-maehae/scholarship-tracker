@@ -40,9 +40,10 @@ CATEGORY_PATTERNS = {
         r'applicants? must|who can apply|entry requirements)\b', re.I
     ),
     'documents': re.compile(
-        r'\b(?:documents?|transcripts?|reference letters?|'
+        r'\b(?:documents?|transcripts?|degree diplomas?|reference letters?|'
         r'letters? of (?:reference|recommendation)|passport|'
-        r'curriculum vitae|personal statement|proof of (?:english|language))\b', re.I
+        r'curriculum vitae|CV|personal statement|statement of purpose|'
+        r'(?:proof|documentation) of (?:english|language)|language proficiency)\b', re.I
     ),
 }
 
@@ -154,13 +155,17 @@ def suggest(blocks):
     candidates = {key: [] for key in CATEGORY_PATTERNS}
     deadline_evidence = []
     for position, (heading, body) in enumerate(blocks):
-        if body.lower().startswith('home >') or body.casefold() == heading.casefold():
+        if (not re.search(r'[\w\d]', body, re.UNICODE)
+                or body.lower().startswith('home >')
+                or body.casefold() == heading.casefold()):
             continue
         for category, pattern in CATEGORY_PATTERNS.items():
             special_heading = category == 'funding' and heading.lower() in EXTRA_FUNDING_HEADINGS
             if not (special_heading or pattern.search(heading + ' ' + body)):
                 continue
             if TEXT_HEADINGS.fullmatch(body.rstrip(':')):
+                continue
+            if category == 'documents' and re.search(r'\bfollowing documents\b', body, re.I):
                 continue
             evidence = {'heading': heading[:150], 'excerpt': body[:400]}
             if category == 'deadline':
