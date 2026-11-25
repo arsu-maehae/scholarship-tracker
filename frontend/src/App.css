@@ -3,3 +3,4 @@
 
 .detail .extraction{border-top:0;margin-top:0;padding-top:0;margin-bottom:24px}
 .source-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.attempt{margin:14px 0;padding:12px 14px;background:#f6f9f4;border-radius:6px}.attempt p{margin:4px 0}
+.source-group{border-top:1px solid #dce4d8;margin-top:18px;padding-top:14px}.source-group h5{margin:16px 0 6px}.source-link{display:inline-block;margin:0 12px 8px 0;font-size:13px}

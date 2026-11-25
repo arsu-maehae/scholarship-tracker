@@ -16,9 +16,9 @@ DEFAULT_MAX_BYTES = 262_144
 HOST_MAX_BYTES = {'www.emmir.org': 1_048_576}
 OFFICIAL_PAGE_GROUPS = {
     'www.emmir.org': (
-        {'label': 'Application deadlines and required documents', 'url': 'https://www.emmir.org/application-procedures'},
-        {'label': 'Entry and language requirements', 'url': 'https://www.emmir.org/requirements'},
-        {'label': 'Costs and funding', 'url': 'https://www.emmir.org/cost-and-funding'},
+        {'label': 'Application deadlines and required documents', 'url': 'https://www.emmir.org/application-procedures', 'categories': ('deadline', 'documents')},
+        {'label': 'Entry and language requirements', 'url': 'https://www.emmir.org/requirements', 'categories': ('eligibility',)},
+        {'label': 'Costs and funding', 'url': 'https://www.emmir.org/cost-and-funding', 'categories': ('funding',)},
     ),
 }
 RESTRICTED_PATHS = {
@@ -31,7 +31,7 @@ def official_pages_for(saved_url):
         host = urlsplit(saved_url).hostname
     except (TypeError, ValueError):
         return []
-    return [dict(page) for page in OFFICIAL_PAGE_GROUPS.get(host, ())]
+    return [{**page, 'categories': list(page['categories'])} for page in OFFICIAL_PAGE_GROUPS.get(host, ())]
 
 
 def source_is_allowed_for_saved(saved_url, source_url):

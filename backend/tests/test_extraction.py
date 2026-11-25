@@ -136,6 +136,27 @@ A degree certificate and two references.
 
 @unittest.skipUnless(os.environ.get('POSTGRES_DB')=='scholarship_tracker_test','requires disposable database')
 class ExtractionDatabaseTests(unittest.TestCase):
+    def test_emmir_detail_attempts_are_returned_by_official_source(self):
+        item=tracked.save_link(tracked.SaveLink(source_url='https://www.emmir.org/'))
+        pages={
+            'https://www.emmir.org/application-procedures': '<main><h2>Application deadlines</h2><p>20 December 2026 for scholarship applicants</p><p>15 July 2027 for fee-paying applicants</p><h2>Required documentation</h2><p>CV</p></main>',
+            'https://www.emmir.org/requirements': '<main><h2>Entry requirements</h2><p>Applicants must hold a relevant first degree.</p></main>',
+            'https://www.emmir.org/cost-and-funding': '<main><h2>Funding options</h2><p>Scholarship holders receive a monthly scholarship of EUR 1,400.</p></main>',
+        }
+        with patch('extraction.fetch_official_html',side_effect=lambda url: pages[url]):
+            for source_url in pages:
+                self.assertEqual(extract(item['id'],ExtractInput(mode='page',source_url=source_url))['outcome'],'found')
+        state=latest_extraction(item['id'])
+        self.assertEqual([attempt['source_url'] for attempt in state['page_attempts']],list(pages))
+        self.assertTrue(state['page_attempts'][0]['suggestions']['deadline'])
+        self.assertTrue(state['page_attempts'][0]['suggestions']['documents'])
+        self.assertEqual(state['page_attempts'][0]['suggestions']['funding'],[])
+        self.assertTrue(state['page_attempts'][1]['suggestions']['eligibility'])
+        self.assertEqual(state['page_attempts'][1]['suggestions']['deadline'],[])
+        self.assertTrue(state['page_attempts'][2]['suggestions']['funding'])
+        self.assertEqual(state['page_attempts'][2]['suggestions']['eligibility'],[])
+        self.assertIsNone(tracked.read_item(item['id'])['deadline'])
+
     def test_failed_retry_preserves_confirmed_data_and_previous_suggestions(self):
         item=tracked.save_link(tracked.SaveLink(source_url='https://example.org/extraction-test/'+uuid4().hex))
         tracked.edit_item(item['id'],tracked.EditScholarship(notes='Keep this',status='preparing',deadline='2030-01-01'))

@@ -217,5 +217,21 @@ def latest_extraction(item_id: int):
         rows=session.scalars(select(ExtractionAttempt).where(ExtractionAttempt.scholarship_id==item_id).order_by(ExtractionAttempt.id.desc())).all()
         latest=attempt_dict(rows[0]) if rows else None
         previous=next((attempt_dict(row) for row in rows[1:] if row.outcome=='found'),None)
+        official_pages=official_pages_for(item.source_url)
+        latest_found_by_source={}
+        for row in rows:
+            if row.outcome=='found' and row.source_url and row.source_url not in latest_found_by_source:
+                latest_found_by_source[row.source_url]=attempt_dict(row)
+        page_attempts=[]
+        for page in official_pages:
+            if page['url'] not in latest_found_by_source:
+                continue
+            attempt=latest_found_by_source[page['url']]
+            allowed=set(page['categories'])
+            attempt['suggestions']={**attempt['suggestions'],
+                                    **{category:[] for category in CATEGORY_PATTERNS if category not in allowed}}
+            if 'deadline' not in allowed:
+                attempt['suggestions']['proposed_deadline']=None
+            page_attempts.append(attempt)
         return {'latest':latest,'previous_found':previous if latest and latest['outcome']!='found' else None,
-                'official_pages':official_pages_for(item.source_url)}
+                'official_pages':official_pages,'page_attempts':page_attempts}
