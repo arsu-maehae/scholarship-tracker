@@ -71,6 +71,8 @@ describe('EMMIR acceptance flow', () => {
 
     fireEvent.click(screen.getByRole('button',{name:'Use as funding'}))
     expect((screen.getByLabelText('Funding') as HTMLTextAreaElement).value).toBe(funding)
+    expect((screen.getByRole('button',{name:'Added to draft ✓'}) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText('Funding added to the draft. It is not saved yet.')).toBeTruthy()
     expect(patchBodies).toHaveLength(0)
     expect((screen.getByLabelText('Confirmed deadline') as HTMLInputElement).value).toBe('')
 
