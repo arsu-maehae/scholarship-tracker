@@ -79,5 +79,6 @@ describe('EMMIR acceptance flow', () => {
     fireEvent.click(screen.getByRole('button',{name:'Save changes'}))
     await waitFor(()=>expect(patchBodies).toHaveLength(1))
     expect(patchBodies[0]).toMatchObject({funding,deadline:null})
+    expect(await screen.findByText('Changes saved ✓')).toBeTruthy()
   })
 })
