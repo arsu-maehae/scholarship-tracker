@@ -35,6 +35,8 @@ describe('EMMIR acceptance flow', () => {
     currentItem={...item}
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit) => {
       const path=String(input)
+      if(path.endsWith('/profile/current'))return new Response(JSON.stringify({nationality:null,prior_degree:null,field:null,target_intake:null,language_status:null}),{status:200})
+      if(path.endsWith('/1/requirements'))return new Response(JSON.stringify([]),{status:200})
       if(path.endsWith('/1/extract')&&init?.method==='POST'){
         extractBodies.push(JSON.parse(String(init.body)))
         return new Response(JSON.stringify(attempts[Math.min(extractBodies.length-1,2)]),{status:200})
@@ -72,7 +74,7 @@ describe('EMMIR acceptance flow', () => {
     expect(screen.getByText(/15 July 2027 for fee paying/)).toBeTruthy()
     expect(screen.getAllByText('Clear copy of a valid passport').length).toBeGreaterThan(0)
     expect(screen.getAllByText('CV and Statement of Purpose').length).toBeGreaterThan(0)
-    expect(screen.getByText(/Applicants must hold a relevant first degree/)).toBeTruthy()
+    expect(screen.getAllByText(/Applicants must hold a relevant first degree/).length).toBeGreaterThan(0)
     expect(screen.getByText(funding)).toBeTruthy()
     expect(screen.getByRole('button',{name:'Use deadline 2026-12-20'})).toBeTruthy()
     expect(screen.getByRole('button',{name:'Use deadline 2027-07-15'})).toBeTruthy()
@@ -141,5 +143,26 @@ describe('EMMIR acceptance flow', () => {
     expect(patchBodies).toHaveLength(0)
     fireEvent.click(within(proposals).getAllByRole('button',{name:'Accept task'})[0])
     await waitFor(()=>expect(patchBodies[0]).toMatchObject({label:'Prepare passport copy',excerpt:'Clear copy of a valid passport'}))
+  })
+
+  it('lets the user save profile facts and review an extracted source requirement',async()=>{
+    const requests:unknown[]=[]
+    vi.mocked(fetch).mockImplementation(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const path=String(input)
+      if(path.endsWith('/profile/current')){if(init?.method==='PUT')requests.push(JSON.parse(String(init.body)));return new Response(JSON.stringify({nationality:null,prior_degree:null,field:null,target_intake:null,language_status:null}))}
+      if(path.endsWith('/1/requirements')){if(init?.method==='POST'){requests.push(JSON.parse(String(init.body)));return new Response(JSON.stringify({id:1}))}return new Response(JSON.stringify([]))}
+      if(path.endsWith('/1/extraction'))return new Response(JSON.stringify({latest:attempts[1],previous_found:null,official_pages:pages,page_attempts:[attempts[1]]}))
+      if(path.includes('/api/tracked-scholarships?'))return new Response(JSON.stringify([currentItem]))
+      throw new Error(path)
+    })
+    render(<App/>);fireEvent.click(await screen.findByRole('button',{name:'Open'}))
+    const checker=await screen.findByRole('region',{name:'Application checker'})
+    fireEvent.change(within(checker).getByLabelText('Nationality'),{target:{value:'Thai'}})
+    fireEvent.click(within(checker).getByRole('button',{name:'Save profile'}))
+    await waitFor(()=>expect(requests).toContainEqual(expect.objectContaining({nationality:'Thai'})))
+    fireEvent.change(within(checker).getByLabelText('Source excerpt'),{target:{value:'2:0'}})
+    fireEvent.change(within(checker).getByLabelText('Exact source wording'),{target:{value:'first degree'}})
+    fireEvent.click(within(checker).getByRole('button',{name:'Add requirement'}))
+    await waitFor(()=>expect(requests).toContainEqual(expect.objectContaining({attempt_id:2,expected:'first degree'})))
   })
 })

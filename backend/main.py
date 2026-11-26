@@ -20,4 +20,5 @@ def database_health():
 
 from tracked import router as tracked_router
 import extraction  # Register extraction endpoints on the tracker router.
+import checker  # Register profile and requirement endpoints.
 app.include_router(tracked_router)

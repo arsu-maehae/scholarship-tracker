@@ -180,3 +180,23 @@ class ExtractionAttempt(Base):
     outcome: Mapped[str] = mapped_column(String(20), nullable=False)
     suggestions_json: Mapped[str] = mapped_column(Text, nullable=False, server_default='{}')
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudentProfile(Base):
+    __tablename__ = 'student_profile'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nationality: Mapped[str | None] = mapped_column(String(120))
+    prior_degree: Mapped[str | None] = mapped_column(String(120))
+    field: Mapped[str | None] = mapped_column(String(120))
+    target_intake: Mapped[str | None] = mapped_column(String(120))
+    language_status: Mapped[str | None] = mapped_column(String(120))
+
+
+class ReviewedRequirement(Base):
+    __tablename__ = 'reviewed_requirements'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    excerpt: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    expected: Mapped[str] = mapped_column(String(120), nullable=False)
