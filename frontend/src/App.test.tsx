@@ -26,11 +26,13 @@ describe('EMMIR acceptance flow', () => {
   const extractBodies:unknown[]=[]
   const patchBodies:unknown[]=[]
   const sourceBodies:unknown[]=[]
+  let currentItem={...item}
 
   beforeEach(() => {
     extractBodies.length=0
     patchBodies.length=0
     sourceBodies.length=0
+    currentItem={...item}
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit) => {
       const path=String(input)
       if(path.endsWith('/1/extract')&&init?.method==='POST'){
@@ -47,10 +49,10 @@ describe('EMMIR acceptance flow', () => {
         return new Response(JSON.stringify({id:4,...body}),{status:201})
       }
       if(path.endsWith('/1')&&init?.method==='PATCH'){
-        const body=JSON.parse(String(init.body));patchBodies.push(body)
-        return new Response(JSON.stringify({...item,...body}),{status:200})
+        const body=JSON.parse(String(init.body));patchBodies.push(body);currentItem={...currentItem,...body}
+        return new Response(JSON.stringify(currentItem),{status:200})
       }
-      if(path.includes('/api/tracked-scholarships?'))return new Response(JSON.stringify([item]),{status:200})
+      if(path.includes('/api/tracked-scholarships?'))return new Response(JSON.stringify([currentItem]),{status:200})
       throw new Error(`Unexpected request: ${init?.method||'GET'} ${path}`)
     }))
   })
@@ -100,5 +102,25 @@ describe('EMMIR acceptance flow', () => {
     expect(await screen.findByRole('link',{name:'scholarships.example.org/funding ↗'})).toBeTruthy()
     expect((screen.getByLabelText('Confirmed deadline') as HTMLInputElement).value).toBe('')
     expect(patchBodies).toHaveLength(0)
+  })
+
+  it('keeps an extracted deadline out of the dashboard until it is selected and saved',async() => {
+    render(<App/>)
+    fireEvent.click(await screen.findByRole('button',{name:'Open'}))
+    fireEvent.click(await screen.findByRole('button',{name:'Extract all source pages'}))
+    await waitFor(()=>expect(extractBodies).toHaveLength(3))
+    fireEvent.click(await screen.findByRole('button',{name:'Use deadline 2026-12-20'}))
+    expect((screen.getByLabelText('Confirmed deadline') as HTMLInputElement).value).toBe('2026-12-20')
+    expect(patchBodies).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button',{name:'Back to dashboard'}))
+    expect(screen.getByText('Date not confirmed')).toBeTruthy()
+    expect(screen.queryByText(/20 Dec 2026/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('button',{name:'Open'}))
+    fireEvent.click(await screen.findByRole('button',{name:'Use deadline 2026-12-20'}))
+    fireEvent.click(screen.getByRole('button',{name:'Save changes'}))
+    await waitFor(()=>expect(patchBodies.at(-1)).toMatchObject({deadline:'2026-12-20'}))
+    fireEvent.click(screen.getByRole('button',{name:'Back to dashboard'}))
+    expect(await screen.findAllByText(/20 Dec 2026/)).not.toHaveLength(0)
   })
 })

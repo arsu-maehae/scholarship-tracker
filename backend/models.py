@@ -152,6 +152,7 @@ class ChecklistItem(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
     label: Mapped[str] = mapped_column(String(250), nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date)
     completed: Mapped[bool] = mapped_column(server_default='false')
 
 

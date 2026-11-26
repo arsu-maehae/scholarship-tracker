@@ -65,6 +65,7 @@ class EditScholarship(BaseModel):
 class ChecklistInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     label: str = Field(min_length=1,max_length=250)
+    due_date: date | None = None
     completed: bool = False
     @field_validator('label')
     @classmethod
@@ -84,6 +85,7 @@ class SourcePageInput(BaseModel):
 class ChecklistEdit(BaseModel):
     model_config = ConfigDict(extra='forbid')
     label: str | None = Field(default=None,min_length=1,max_length=250)
+    due_date: date | None = None
     completed: bool | None = None
     @field_validator('label')
     @classmethod
@@ -181,7 +183,7 @@ def edit_checklist(item_id: int, task_id: int, body: ChecklistEdit):
         task=session.get(ChecklistItem,task_id)
         if not task or task.scholarship_id!=item_id: raise HTTPException(404,'Task not found')
         for key,value in body.model_dump(exclude_unset=True).items():
-            if value is None: raise HTTPException(422,'Task fields cannot be null')
+            if value is None and key!='due_date': raise HTTPException(422,'Task fields cannot be null')
             setattr(task,key,value)
         session.flush(); return {c.name:getattr(task,c.name) for c in task.__table__.columns}
 

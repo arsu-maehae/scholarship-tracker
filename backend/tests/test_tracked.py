@@ -29,10 +29,15 @@ class TrackerDatabaseTests(unittest.TestCase):
         self.assertEqual(duplicate.exception.detail['existing_id'],item['id'])
         updated=tracked.edit_item(item['id'],tracked.EditScholarship(title='Fixture',deadline='2030-01-10',status='preparing',notes='Test note'))
         self.assertEqual(str(updated['deadline']),'2030-01-10')
-        task=tracked.add_checklist(item['id'],tracked.ChecklistInput(label='Reference'))
+        task=tracked.add_checklist(item['id'],tracked.ChecklistInput(label='Reference',due_date='2030-01-08'))
+        self.assertEqual(str(task['due_date']),'2030-01-08')
         with self.assertRaises(HTTPException): tracked.edit_checklist(item['id']+999,task['id'],tracked.ChecklistEdit(completed=True))
-        tracked.edit_checklist(item['id'],task['id'],tracked.ChecklistEdit(completed=True))
-        self.assertTrue(tracked.read_item(item['id'])['checklist'][0]['completed'])
+        tracked.edit_checklist(item['id'],task['id'],tracked.ChecklistEdit(completed=True,due_date='2030-01-09'))
+        saved_task=tracked.read_item(item['id'])['checklist'][0]
+        self.assertTrue(saved_task['completed'])
+        self.assertEqual(str(saved_task['due_date']),'2030-01-09')
+        tracked.edit_checklist(item['id'],task['id'],tracked.ChecklistEdit(due_date=None))
+        self.assertIsNone(tracked.read_item(item['id'])['checklist'][0]['due_date'])
         tracked.edit_item(item['id'],tracked.EditScholarship(archived=True))
         with self.assertRaises(HTTPException) as archived_duplicate:
             tracked.save_link(tracked.SaveLink(source_url='https://example.org/check/'+suffix+'?cycle=1'))
