@@ -149,10 +149,12 @@ class TrackedScholarship(Base):
 
 class ChecklistItem(Base):
     __tablename__ = 'tracked_checklist'
+    __table_args__ = (UniqueConstraint('scholarship_id', 'proposal_key', name='uq_checklist_proposal'),)
     id: Mapped[int] = mapped_column(primary_key=True)
     scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
     label: Mapped[str] = mapped_column(String(250), nullable=False)
     due_date: Mapped[date | None] = mapped_column(Date)
+    proposal_key: Mapped[str | None] = mapped_column(String(64))
     completed: Mapped[bool] = mapped_column(server_default='false')
 
 

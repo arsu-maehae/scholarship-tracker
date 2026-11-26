@@ -1,5 +1,6 @@
 """Deterministic, evidence-only extraction. Never modifies confirmed fields."""
 from datetime import datetime
+import hashlib
 import json
 import re
 from urllib.parse import urldefrag
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
-from models import ExtractionAttempt
+from models import ExtractionAttempt, ChecklistItem
 from database import engine
 from official_page import FetchError, fetch_official_html, official_pages_for, source_is_allowed_for_saved
 from tracked import router, get_item, get_source_pages
@@ -45,6 +46,7 @@ CATEGORY_PATTERNS = {
         r'curriculum vitae|CV|personal statement|statement of purpose|'
         r'(?:proof|documentation) of (?:english|language)|language proficiency)\b', re.I
     ),
+    'application_steps': re.compile(r'\b(?:apply online|online application|submit (?:your |the )?application|application portal|upload (?:your |the )?documents)\b', re.I),
 }
 
 TEXT_HEADINGS = re.compile(
@@ -75,6 +77,7 @@ PRIORITY_HEADINGS = {
     'funding': re.compile(r'\b(?:funding options?|erasmus\+? scholarship holders?|participation costs?)\b', re.I),
     'eligibility': re.compile(r'\b(?:entry requirements?|language requirements?|selection criteria)\b', re.I),
     'documents': re.compile(r'\brequired documentation\b', re.I),
+    'application_steps': re.compile(r'\b(?:application procedure|how to apply)\b', re.I),
 }
 
 
@@ -180,7 +183,7 @@ def suggest(blocks):
             continue
         for category, pattern in CATEGORY_PATTERNS.items():
             special_heading = category == 'funding' and heading.lower() in EXTRA_FUNDING_HEADINGS
-            if not (special_heading or pattern.search(heading + ' ' + body)):
+            if not (special_heading or pattern.search(body if category == 'application_steps' else heading + ' ' + body)):
                 continue
             if TEXT_HEADINGS.fullmatch(body.rstrip(':')):
                 continue
@@ -224,7 +227,7 @@ def extract(item_id: int, body: ExtractInput):
         try:
             blocks=html_blocks(fetch_official_html(source)) if body.mode=='page' else text_blocks(body.text or '')
             data=suggest(blocks)
-            outcome='found' if any(data[k] for k in ('deadline','funding','eligibility','documents')) else 'no_details'
+            outcome='found' if any(data[k] for k in CATEGORY_PATTERNS) else 'no_details'
             if outcome=='no_details':
                 data['message']='The page was fetched, but no supported details were found. Paste visible public text if the page requires JavaScript.'
         except FetchError as error:
@@ -253,6 +256,7 @@ def latest_extraction(item_id: int):
             attempt=latest_found_by_source[page['url']]
             if page['categories'] is not None:
                 allowed=set(page['categories'])
+                if 'documents' in allowed: allowed.add('application_steps')
                 attempt['suggestions']={**attempt['suggestions'],
                                         **{category:[] for category in CATEGORY_PATTERNS if category not in allowed}}
                 if 'deadline' not in allowed:
@@ -260,3 +264,33 @@ def latest_extraction(item_id: int):
             page_attempts.append(attempt)
         return {'latest':latest,'previous_found':previous if latest and latest['outcome']!='found' else None,
                 'official_pages':official_pages,'page_attempts':page_attempts}
+
+def proposal_key(source, excerpt):
+    return hashlib.sha256((source+'\n'+' '.join(excerpt.split()).casefold()).encode('utf-8')).hexdigest()
+
+class AcceptProposal(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    attempt_id: int
+    category: str = Field(pattern='^(documents|application_steps)$')
+    excerpt: str = Field(min_length=1,max_length=400)
+    label: str = Field(min_length=1,max_length=250)
+
+@router.post('/{item_id}/accept-proposal')
+def accept_proposal(item_id: int, body: AcceptProposal):
+    with Session(engine) as session, session.begin():
+        get_item(session,item_id)
+        attempt=session.get(ExtractionAttempt,body.attempt_id)
+        if not attempt or attempt.scholarship_id!=item_id or attempt.outcome!='found' or not attempt.source_url:
+            raise HTTPException(422,'Choose a sourced extraction proposal.')
+        entries=json.loads(attempt.suggestions_json).get(body.category,[])
+        if not any(entry.get('excerpt')==body.excerpt for entry in entries):
+            raise HTTPException(422,'The supporting excerpt was not found.')
+        label=body.label.strip()
+        if not label: raise HTTPException(422,'Task wording is required.')
+        key=proposal_key(attempt.source_url,body.excerpt)
+        session.execute(text('select pg_advisory_xact_lock(:namespace, :item)'),{'namespace':123913,'item':item_id})
+        existing=session.scalar(select(ChecklistItem).where(ChecklistItem.scholarship_id==item_id,ChecklistItem.proposal_key==key))
+        if existing: return {'id':existing.id,'already_accepted':True}
+        task=ChecklistItem(scholarship_id=item_id,label=label,proposal_key=key)
+        session.add(task); session.flush()
+        return {'id':task.id,'already_accepted':False}

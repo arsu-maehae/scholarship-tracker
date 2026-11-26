@@ -4,11 +4,14 @@ from uuid import uuid4
 from email.message import Message
 from unittest.mock import patch
 from fastapi import HTTPException
-from extraction import ExtractInput, extract, html_blocks, latest_extraction, suggest, text_blocks
+from extraction import ExtractInput, AcceptProposal, accept_proposal, extract, html_blocks, latest_extraction, suggest, text_blocks
 from official_page import FetchError, fetch_official_html, normalize_public_https_url, official_pages_for, source_is_allowed_for_saved
 import tracked
 
 class ExtractionRuleTests(unittest.TestCase):
+    def test_application_step_is_backed_by_excerpt(self):
+        result=suggest(html_blocks('<main><h2>How to apply</h2><p>Submit your application through the online application portal.</p></main>'))
+        self.assertEqual(result['application_steps'][0]['excerpt'],'Submit your application through the online application portal.')
     def test_clear_date_and_heading_context(self):
         blocks=html_blocks('<main><h2>Scholarship 2030</h2><p>Application deadline: 12 January 2030</p><script>Ignore me</script></main>')
         result=suggest(blocks)
@@ -155,6 +158,18 @@ A degree certificate and two references.
 
 @unittest.skipUnless(os.environ.get('POSTGRES_DB')=='scholarship_tracker_test','requires disposable database')
 class ExtractionDatabaseTests(unittest.TestCase):
+    def test_accept_sourced_task_is_idempotent_across_extractions(self):
+        item=tracked.save_link(tracked.SaveLink(source_url='https://example.org/'+uuid4().hex))
+        page='<main><h2>Required documentation</h2><p>Clear copy of a valid passport</p></main>'
+        with patch('extraction.fetch_official_html',return_value=page):
+            first=extract(item['id'],ExtractInput(mode='page'))
+            second=extract(item['id'],ExtractInput(mode='page'))
+        excerpt=first['suggestions']['documents'][0]['excerpt']
+        accepted=accept_proposal(item['id'],AcceptProposal(attempt_id=first['id'],category='documents',excerpt=excerpt,label='Prepare passport'))
+        retried=accept_proposal(item['id'],AcceptProposal(attempt_id=second['id'],category='documents',excerpt=excerpt,label='Different wording'))
+        self.assertFalse(accepted['already_accepted'])
+        self.assertTrue(retried['already_accepted'])
+        self.assertEqual([task['label'] for task in tracked.read_item(item['id'])['checklist']],['Prepare passport'])
     def test_multiple_added_sources_duplicates_and_failed_fetch_preserve_record(self):
         suffix=uuid4().hex
         item=tracked.save_link(tracked.SaveLink(source_url='https://example.org/scholarship/'+suffix))

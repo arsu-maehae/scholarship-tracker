@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 
 const item = { id:1, source_url:'https://www.emmir.org/', title:null, provider:null, intake:null, deadline:null, funding:null, eligibility:null, notes:null, status:'saved', archived_at:null, checklist:[] }
@@ -70,8 +70,8 @@ describe('EMMIR acceptance flow', () => {
     expect(extractBodies.map(body=>(body as {source_url:string}).source_url)).toEqual(pages.map(page=>page.url))
     expect(await screen.findByText(/20 December 2026 for scholarship/)).toBeTruthy()
     expect(screen.getByText(/15 July 2027 for fee paying/)).toBeTruthy()
-    expect(screen.getByText('Clear copy of a valid passport')).toBeTruthy()
-    expect(screen.getByText('CV and Statement of Purpose')).toBeTruthy()
+    expect(screen.getAllByText('Clear copy of a valid passport').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('CV and Statement of Purpose').length).toBeGreaterThan(0)
     expect(screen.getByText(/Applicants must hold a relevant first degree/)).toBeTruthy()
     expect(screen.getByText(funding)).toBeTruthy()
     expect(screen.getByRole('button',{name:'Use deadline 2026-12-20'})).toBeTruthy()
@@ -122,5 +122,24 @@ describe('EMMIR acceptance flow', () => {
     await waitFor(()=>expect(patchBodies.at(-1)).toMatchObject({deadline:'2026-12-20'}))
     fireEvent.click(screen.getByRole('button',{name:'Back to dashboard'}))
     expect(await screen.findAllByText(/20 Dec 2026/)).not.toHaveLength(0)
+  })
+
+  it('lets the user edit and accept one sourced task',async()=>{
+    vi.mocked(fetch).mockImplementation(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const path=String(input)
+      if(path.endsWith('/1/extract')){extractBodies.push({});return new Response(JSON.stringify(attempts[0]))}
+      if(path.endsWith('/1/extraction'))return new Response(JSON.stringify({latest:attempts[0],previous_found:null,official_pages:pages,page_attempts:[attempts[0]]}))
+      if(path.endsWith('/1/accept-proposal')){patchBodies.push(JSON.parse(String(init?.body)));return new Response(JSON.stringify({id:9,already_accepted:false}))}
+      if(path.endsWith('/1'))return new Response(JSON.stringify(currentItem))
+      if(path.includes('/api/tracked-scholarships?'))return new Response(JSON.stringify([currentItem]))
+      throw new Error(path)
+    })
+    render(<App/>);fireEvent.click(await screen.findByRole('button',{name:'Open'}))
+    const proposals=await screen.findByRole('region',{name:'Proposed checklist tasks'})
+    expect(within(proposals).getAllByRole('link',{name:'Official source ↗'})[0].getAttribute('href')).toBe(pages[0].url)
+    fireEvent.change(within(proposals).getByLabelText('Task wording: Clear copy of a valid passport'),{target:{value:'Prepare passport copy'}})
+    expect(patchBodies).toHaveLength(0)
+    fireEvent.click(within(proposals).getAllByRole('button',{name:'Accept task'})[0])
+    await waitFor(()=>expect(patchBodies[0]).toMatchObject({label:'Prepare passport copy',excerpt:'Clear copy of a valid passport'}))
   })
 })
