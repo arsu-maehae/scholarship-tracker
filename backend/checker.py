@@ -37,17 +37,19 @@ def compare(profile, requirements):
         if len(conflicts)>1:
             status,reason='verify','Source requirements differ; check whether they apply to the same applicant or intake.'
         elif not value:
-            status,reason='verify','Your profile has no value for this requirement.'
+            status,reason='verify','Add the missing fact to your profile, then check the full requirement and evidence on the official source.'
         else:
             # Only a narrowly phrased positive requirement can be compared automatically.
             prefix={'nationality':'nationality','prior_degree':'prior degree','field':'field','target_intake':'target intake','language_status':'language test'}[requirement.kind]
             simple=re.fullmatch(rf'\s*(?:Required {prefix}:\s*|Applicants must have {prefix}\s+){re.escape(expected)}\s*\.?\s*',requirement.excerpt,re.I)
-            if simple and value.casefold()==expected.casefold():
+            if simple and value.casefold()==expected.casefold() and requirement.kind!='language_status':
                 status,reason='met','Your recorded answer matches this explicit requirement; confirm evidence with the provider.'
             elif simple and requirement.kind=='language_status' and value.casefold()=='not taken':
                 status,reason='prepare','Your profile says the required language test has not been taken.'
+            elif simple and requirement.kind=='language_status' and value.casefold()==expected.casefold():
+                status,reason='verify','Check your score, test date and accepted alternatives on the official source; recording the test name alone does not confirm proficiency.'
             else:
-                status,reason='verify',('Your profile mentions the same wording; check the full condition and supporting evidence.' if value.casefold()==expected.casefold() else 'Your profile differs; check the condition and alternatives on the source.')
+                status,reason='verify',('Your profile mentions the same wording; check the full condition and supporting evidence on the official source.' if value.casefold()==expected.casefold() else 'The selected profile fact does not establish this condition. Check the complete requirement and alternatives on the official source.')
         results.append({'id':requirement.id,'kind':requirement.kind,'expected':expected,'excerpt':requirement.excerpt,'source_url':requirement.source_url,'status':status,'reason':reason})
     return results
 

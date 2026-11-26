@@ -20,6 +20,9 @@ class ComparisonTests(unittest.TestCase):
     def test_language_preparation_and_conflict(self):
         rule=requirement('language_status','IELTS','Required language test: IELTS.')
         self.assertEqual(checker.compare(SimpleNamespace(language_status='not taken'),[rule])[0]['status'],'prepare')
+        result=checker.compare(SimpleNamespace(language_status='IELTS'),[rule])[0]
+        self.assertEqual(result['status'],'verify')
+        self.assertIn('score',result['reason'])
         other=requirement('language_status','TOEFL','Required language test: TOEFL.')
         self.assertEqual([r['status'] for r in checker.compare(SimpleNamespace(language_status='IELTS'),[rule,other])],['verify','verify'])
 

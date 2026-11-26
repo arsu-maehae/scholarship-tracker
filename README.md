@@ -35,7 +35,16 @@ If Docker Desktop is closed, start it and wait until it is running, then repeat 
 
 Paste a public HTTP(S) information-page link and select **Save scholarship**. Use the detail screen to add facts, a confirmed deadline, status, notes and checklist items. The dashboard shows saved items and deadline states in the Asia/Bangkok calendar. Archive and restore items independently of status. A repeated normalized URL opens the existing item rather than creating a duplicate.
 
-After saving, **Extract from page** is optional. The allowlist in `backend/official_page.py` currently contains `www.ox.ac.uk`, `www.studyinnl.org` and `www.studyinjapan.go.jp`. Only public HTML on these exact HTTPS hosts is fetched, without redirects or credentials; other pages, PDFs and failures can use pasted public text or manual entry. Suggestions quote short excerpts, may be incomplete, and do not change your confirmed fields until you apply and save them. If a later attempt fails, the last useful suggestions remain visible. The Oxford live smoke check was redirected and safely refused, so live provider extraction was not verified in this environment.
+After saving, use **Extract all source pages** or select an individual official page. Public HTTPS HTML pages are fetched with destination and redirect checks; PDFs, blocked or JavaScript-only pages can use pasted public text or manual entry. Suggestions quote short excerpts, may be incomplete, and do not change confirmed fields until you apply and save them. If a later attempt fails, the last useful suggestions remain visible.
+
+## Short demo: EMMIR to a checklist
+
+1. Save `https://www.emmir.org/`, open the record, and choose **Extract all source pages**. Review the official links and excerpts.
+2. Under **Proposed checklist tasks**, edit a document task and choose **Accept task**. It is saved to the checklist; repeat extraction without creating another copy of the same sourced proposal.
+3. In **Application checker**, enter and save your profile facts. Choose an eligibility excerpt, select the relevant profile fact, and enter exact wording from the excerpt to add it for review. Read its status, explanation and official source. Replace any synthetic test profile values with your own.
+4. If you choose an applicant-specific deadline, click **Save changes** to confirm it. Return to the dashboard to see the saved deadline and checklist progress; optionally set a task due date.
+
+The checker assists review, not an eligibility decision. Missing, conflicting and complex conditions generally show **verify**. It does not interpret equivalence, exceptions, score thresholds, EEA membership or institution-specific rules; the narrow **met** and **prepare** rules cover only certain explicit sentence forms. Extraction can miss details, and the official source may have changed. Check full requirements with the provider. See [the synthetic-profile evaluation](docs/APPLICATION_CHECKER_EVALUATION.md) for cases and gaps. No AI or paid API is used.
 
 ## Checks
 
@@ -44,7 +53,9 @@ cd C:\Users\s6601\work\scholarship-tracker-restart\backend
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_import_catalogue_json.py -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_tracked.py -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_extraction.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_checker*.py -v
 cd ..\frontend
+npm test -- --run
 npm run lint
 npm run build
 ```
