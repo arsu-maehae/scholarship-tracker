@@ -5,7 +5,7 @@ from email.message import Message
 from unittest.mock import patch
 from fastapi import HTTPException
 from extraction import ExtractInput, extract, html_blocks, latest_extraction, suggest, text_blocks
-from official_page import FetchError, fetch_official_html, official_pages_for, source_is_allowed_for_saved
+from official_page import FetchError, fetch_official_html, normalize_public_https_url, official_pages_for, source_is_allowed_for_saved
 import tracked
 
 class ExtractionRuleTests(unittest.TestCase):
@@ -19,9 +19,11 @@ class ExtractionRuleTests(unittest.TestCase):
         self.assertIsNone(result['proposed_deadline'])
         result=suggest(text_blocks('Deadline 12 January 2030 or 15 February'))
         self.assertIsNone(result['proposed_deadline'])
-    def test_missing_and_unapproved_host(self):
+    def test_missing_and_unsafe_destination(self):
         self.assertFalse(suggest(text_blocks('No details here'))['funding'])
-        with self.assertRaises(FetchError): fetch_official_html('https://example.com/')
+        for url in ('http://example.com/','https://127.0.0.1/','https://localhost/','https://user:pass@example.com/'):
+            with self.subTest(url=url), self.assertRaises(FetchError):
+                normalize_public_https_url(url)
     def test_emmir_uses_only_verified_official_detail_pages(self):
         saved='https://www.emmir.org/'
         pages=official_pages_for(saved)
@@ -33,6 +35,7 @@ class ExtractionRuleTests(unittest.TestCase):
         self.assertTrue(source_is_allowed_for_saved(saved,pages[0]['url']))
         self.assertFalse(source_is_allowed_for_saved(saved,'https://www.emmir.org/post/unverified'))
         self.assertFalse(source_is_allowed_for_saved(saved,'https://example.com/requirements'))
+        self.assertTrue(source_is_allowed_for_saved(saved,'https://example.com/requirements',[{'source_url':'https://example.com/requirements'}]))
     def test_html_header_and_definition_list_keep_evidence(self):
         page = """<main>
           <header><h2>Application deadline: January 15, 2030</h2></header>
@@ -100,19 +103,35 @@ A degree certificate and two references.
                 self.assertIsNone(suggest(text_blocks(excerpt))['proposed_deadline'])
         result = suggest(text_blocks('Deadline: 15 Jan 2030'))
         self.assertEqual(result['proposed_deadline'], '2030-01-15')
+        competing=suggest(text_blocks('Deadline 12 January 2030\nDeadline 15 January 2031'))
+        self.assertEqual([entry['date'] for entry in competing['deadline']],['2030-01-12','2031-01-15'])
+        self.assertIsNone(competing['proposed_deadline'])
 
     def test_private_dns_rejected(self):
         with patch('official_page.socket.getaddrinfo',return_value=[(None,None,None,None,('127.0.0.1',443))]):
             with self.assertRaises(FetchError): fetch_official_html('https://www.ox.ac.uk/')
-    def test_redirect_is_rejected(self):
-        class Response: status=302
+    def test_redirects_are_revalidated_and_unsafe_redirect_is_rejected(self):
+        class Response:
+            def __init__(self,status,location=None,body=b'<main><p>Funding: EUR 5,000.</p></main>'):
+                self.status=status; self.headers=Message(); self.body=body
+                self.headers['Content-Type']='text/html'
+                if location: self.headers['Location']=location
+            def read1(self,_):
+                body,self.body=self.body,b''
+                return body
         class Connection:
-            def __init__(self,*_): pass
+            sock=None
+            def __init__(self,*_): self.response=responses.pop(0)
             def request(self,*_,**__): pass
-            def getresponse(self): return Response()
+            def getresponse(self): return self.response
             def close(self): pass
+        responses=[Response(302,'https://scholarships.example.org/details'),Response(200)]
+        with patch('official_page.resolve_public',return_value=['8.8.8.8']) as resolve,patch('official_page.PinnedHTTPS',Connection):
+            self.assertIn('EUR 5,000',fetch_official_html('https://example.org/start'))
+            self.assertEqual([call.args[0] for call in resolve.call_args_list],['example.org','scholarships.example.org'])
+        responses=[Response(302,'http://127.0.0.1/private')]
         with patch('official_page.resolve_public',return_value=['8.8.8.8']),patch('official_page.PinnedHTTPS',Connection):
-            with self.assertRaises(FetchError): fetch_official_html('https://www.ox.ac.uk/')
+            with self.assertRaises(FetchError): fetch_official_html('https://example.org/start')
     def test_non_html_oversize_and_timeout_are_rejected(self):
         class Response:
             status=200
@@ -136,6 +155,35 @@ A degree certificate and two references.
 
 @unittest.skipUnless(os.environ.get('POSTGRES_DB')=='scholarship_tracker_test','requires disposable database')
 class ExtractionDatabaseTests(unittest.TestCase):
+    def test_multiple_added_sources_duplicates_and_failed_fetch_preserve_record(self):
+        suffix=uuid4().hex
+        item=tracked.save_link(tracked.SaveLink(source_url='https://example.org/scholarship/'+suffix))
+        tracked.edit_item(item['id'],tracked.EditScholarship(notes='Keep note',status='preparing',deadline='2030-01-01'))
+        tracked.add_checklist(item['id'],tracked.ChecklistInput(label='Keep task'))
+        deadline=tracked.add_source_page(item['id'],tracked.SourcePageInput(source_url='https://example.org/deadlines/'+suffix))
+        funding=tracked.add_source_page(item['id'],tracked.SourcePageInput(source_url='https://funding.example.net/award/'+suffix))
+        with self.assertRaises(HTTPException) as duplicate:
+            tracked.add_source_page(item['id'],tracked.SourcePageInput(source_url=deadline['source_url']))
+        self.assertEqual(duplicate.exception.status_code,409)
+        pages={
+            deadline['source_url']:'<main><h2>Deadline</h2><p>Applications close 12 January 2030.</p></main>',
+            funding['source_url']:'<main><h2>Funding</h2><p>The scholarship value is EUR 5,000.</p></main>',
+        }
+        with patch('extraction.fetch_official_html',side_effect=lambda url: pages[url]):
+            extract(item['id'],ExtractInput(mode='page',source_url=deadline['source_url']))
+            extract(item['id'],ExtractInput(mode='page',source_url=funding['source_url']))
+        state=latest_extraction(item['id'])
+        self.assertEqual(len(state['official_pages']),3)
+        self.assertEqual([attempt['source_url'] for attempt in state['page_attempts']],[deadline['source_url'],funding['source_url']])
+        with patch('extraction.fetch_official_html',side_effect=FetchError('Official page returned HTTP 403. Paste its public text if access requires a login or browser.')):
+            failed=extract(item['id'],ExtractInput(mode='page',source_url=deadline['source_url']))
+        self.assertEqual(failed['outcome'],'failed')
+        record=tracked.read_item(item['id'])
+        self.assertEqual(record['notes'],'Keep note')
+        self.assertEqual(record['status'],'preparing')
+        self.assertEqual(str(record['deadline']),'2030-01-01')
+        self.assertEqual(record['checklist'][0]['label'],'Keep task')
+
     def test_emmir_detail_attempts_are_returned_by_official_source(self):
         item=tracked.save_link(tracked.SaveLink(source_url='https://www.emmir.org/'))
         pages={
@@ -162,7 +210,8 @@ class ExtractionDatabaseTests(unittest.TestCase):
         tracked.edit_item(item['id'],tracked.EditScholarship(notes='Keep this',status='preparing',deadline='2030-01-01'))
         found=extract(item['id'],ExtractInput(mode='text',text='Application deadline: 12 January 2030'))
         self.assertEqual(found['outcome'],'found')
-        failed=extract(item['id'],ExtractInput(mode='page'))
+        with patch('extraction.fetch_official_html',side_effect=FetchError('Only HTML pages are supported; paste text from PDF or other formats.')):
+            failed=extract(item['id'],ExtractInput(mode='page'))
         self.assertEqual(failed['outcome'],'unsupported')
         state=latest_extraction(item['id'])
         self.assertEqual(state['previous_found']['id'],found['id'])

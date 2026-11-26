@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -152,6 +153,19 @@ class ChecklistItem(Base):
     scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
     label: Mapped[str] = mapped_column(String(250), nullable=False)
     completed: Mapped[bool] = mapped_column(server_default='false')
+
+
+class TrackedSourcePage(Base):
+    __tablename__ = 'tracked_source_pages'
+    __table_args__ = (
+        CheckConstraint("source_url LIKE 'https://%'", name='ck_tracked_source_https'),
+        UniqueConstraint('scholarship_id', 'url_key', name='uq_tracked_source_page_url'),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scholarship_id: Mapped[int] = mapped_column(ForeignKey('tracked_scholarships.id', ondelete='CASCADE'), index=True)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    url_key: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class ExtractionAttempt(Base):

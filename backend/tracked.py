@@ -10,8 +10,9 @@ from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from database import engine
-from models import TrackedScholarship, ChecklistItem
+from models import TrackedScholarship, ChecklistItem, TrackedSourcePage
 from local_guard import local_only
+from official_page import FetchError, normalize_public_https_url
 
 router = APIRouter(prefix='/api/tracked-scholarships', dependencies=[Depends(local_only)])
 Status = Literal['saved','preparing','submitted','accepted','rejected']
@@ -71,6 +72,15 @@ class ChecklistInput(BaseModel):
         if not v.strip(): raise ValueError('Task label is required')
         return v.strip()
 
+class SourcePageInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    source_url: str = Field(min_length=1,max_length=2048)
+    @field_validator('source_url')
+    @classmethod
+    def valid_source_url(cls,v):
+        try: return normalize_public_https_url(v)
+        except FetchError as error: raise ValueError(str(error)) from None
+
 class ChecklistEdit(BaseModel):
     model_config = ConfigDict(extra='forbid')
     label: str | None = Field(default=None,min_length=1,max_length=250)
@@ -85,6 +95,9 @@ def get_item(session, item_id):
     row=session.get(TrackedScholarship,item_id)
     if not row: raise HTTPException(404,'Scholarship not found')
     return row
+
+def get_source_pages(session, item_id):
+    return list(session.scalars(select(TrackedSourcePage).where(TrackedSourcePage.scholarship_id==item_id).order_by(TrackedSourcePage.id)))
 
 def serialize(session,row):
     result={c.name:getattr(row,c.name) for c in row.__table__.columns}
@@ -131,6 +144,30 @@ def edit_item(item_id: int, body: EditScholarship):
                 if value is not None: row.archived_at=datetime.now(timezone.utc) if value else None
             else: setattr(row,key,value)
         row.updated_at=datetime.now(timezone.utc); session.flush(); return serialize(session,row)
+
+@router.post('/{item_id}/sources',status_code=201)
+def add_source_page(item_id: int, body: SourcePageInput):
+    key=normalize_public_https_url(body.source_url)
+    with Session(engine) as session:
+        item=get_item(session,item_id)
+        try:
+            if item.source_url.startswith('https://') and normalize_public_https_url(item.source_url)==key:
+                raise HTTPException(409,'This is already the saved scholarship page.')
+            row=TrackedSourcePage(scholarship_id=item_id,source_url=key,url_key=key)
+            session.add(row); session.flush()
+            result={c.name:getattr(row,c.name) for c in row.__table__.columns}
+            session.commit(); return result
+        except HTTPException:
+            session.rollback(); raise
+        except IntegrityError:
+            session.rollback(); raise HTTPException(409,'This official source page is already added.') from None
+
+@router.delete('/{item_id}/sources/{source_id}')
+def delete_source_page(item_id: int, source_id: int):
+    with Session(engine) as session, session.begin():
+        source=session.get(TrackedSourcePage,source_id)
+        if not source or source.scholarship_id!=item_id: raise HTTPException(404,'Official source page not found')
+        session.delete(source); return {'deleted':True}
 
 @router.post('/{item_id}/checklist',status_code=201)
 def add_checklist(item_id: int, body: ChecklistInput):

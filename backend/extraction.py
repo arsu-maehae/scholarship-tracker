@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from models import ExtractionAttempt
 from database import engine
 from official_page import FetchError, fetch_official_html, official_pages_for, source_is_allowed_for_saved
-from tracked import router, get_item
+from tracked import router, get_item, get_source_pages
 
 class ExtractInput(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -150,6 +150,25 @@ def deadline_candidate(entries):
     return next(iter(dates)) if len(dates) == 1 else None
 
 
+def deadline_value(excerpt):
+    """Return one exact date for an explicitly selected excerpt, never for the whole page."""
+    matches = [*NAMED_DATE.finditer(excerpt), *ISO_DATE.finditer(excerpt)]
+    values = set()
+    for match in matches:
+        raw = match.group().replace('.', '').replace(',', '')
+        if raw[0].isalpha() or ' ' in raw:
+            raw = MONTH_NAME.sub(lambda month: month.group()[:3], raw)
+        for date_format in ('%d %b %Y', '%b %d %Y', '%Y-%m-%d'):
+            try:
+                values.add(datetime.strptime(raw, date_format).date().isoformat())
+                break
+            except ValueError:
+                continue
+        else:
+            return None
+    return next(iter(values)) if len(values) == 1 else None
+
+
 def suggest(blocks):
     suggestions = {key: [] for key in CATEGORY_PATTERNS}
     candidates = {key: [] for key in CATEGORY_PATTERNS}
@@ -169,6 +188,7 @@ def suggest(blocks):
                 continue
             evidence = {'heading': heading[:150], 'excerpt': body[:400]}
             if category == 'deadline':
+                evidence['date'] = deadline_value(body)
                 # Check all matched blocks before suggesting a date, even beyond the display cap.
                 deadline_evidence.append({'excerpt': body})
             if evidence not in (candidate[2] for candidate in candidates[category]):
@@ -194,18 +214,21 @@ def attempt_dict(row):
 def extract(item_id: int, body: ExtractInput):
     with Session(engine) as session, session.begin():
         item=get_item(session,item_id)
+        additional_pages=get_source_pages(session,item_id)
         if not session.scalar(text('select pg_try_advisory_xact_lock(:namespace, :item)'),{'namespace':123912,'item':item_id}):
             raise HTTPException(429,'An extraction is already running for this scholarship.')
         saved_source=urldefrag(item.source_url)[0]
         source=urldefrag(body.source_url or saved_source)[0] if body.mode=='page' else None
-        if source and not source_is_allowed_for_saved(saved_source, source):
-            raise HTTPException(422, 'Choose the saved page or one of its verified official detail pages.')
+        if source and not source_is_allowed_for_saved(saved_source, source, additional_pages):
+            raise HTTPException(422, 'Choose the saved page or one of its added official source pages.')
         try:
             blocks=html_blocks(fetch_official_html(source)) if body.mode=='page' else text_blocks(body.text or '')
             data=suggest(blocks)
             outcome='found' if any(data[k] for k in ('deadline','funding','eligibility','documents')) else 'no_details'
+            if outcome=='no_details':
+                data['message']='The page was fetched, but no supported details were found. Paste visible public text if the page requires JavaScript.'
         except FetchError as error:
-            outcome='unsupported' if 'supported HTTPS host list' in str(error) else 'failed'
+            outcome='unsupported' if 'Only HTML pages' in str(error) else 'failed'
             data={'message':str(error)}
         row=ExtractionAttempt(scholarship_id=item_id,input_kind=body.mode,source_url=source,outcome=outcome,suggestions_json=json.dumps(data))
         session.add(row); session.flush(); return attempt_dict(row)
@@ -214,10 +237,11 @@ def extract(item_id: int, body: ExtractInput):
 def latest_extraction(item_id: int):
     with Session(engine) as session:
         item=get_item(session,item_id)
+        additional_pages=get_source_pages(session,item_id)
         rows=session.scalars(select(ExtractionAttempt).where(ExtractionAttempt.scholarship_id==item_id).order_by(ExtractionAttempt.id.desc())).all()
         latest=attempt_dict(rows[0]) if rows else None
         previous=next((attempt_dict(row) for row in rows[1:] if row.outcome=='found'),None)
-        official_pages=official_pages_for(item.source_url)
+        official_pages=official_pages_for(item.source_url,additional_pages)
         latest_found_by_source={}
         for row in rows:
             if row.outcome=='found' and row.source_url and row.source_url not in latest_found_by_source:
@@ -227,11 +251,12 @@ def latest_extraction(item_id: int):
             if page['url'] not in latest_found_by_source:
                 continue
             attempt=latest_found_by_source[page['url']]
-            allowed=set(page['categories'])
-            attempt['suggestions']={**attempt['suggestions'],
-                                    **{category:[] for category in CATEGORY_PATTERNS if category not in allowed}}
-            if 'deadline' not in allowed:
-                attempt['suggestions']['proposed_deadline']=None
+            if page['categories'] is not None:
+                allowed=set(page['categories'])
+                attempt['suggestions']={**attempt['suggestions'],
+                                        **{category:[] for category in CATEGORY_PATTERNS if category not in allowed}}
+                if 'deadline' not in allowed:
+                    attempt['suggestions']['proposed_deadline']=None
             page_attempts.append(attempt)
         return {'latest':latest,'previous_found':previous if latest and latest['outcome']!='found' else None,
                 'official_pages':official_pages,'page_attempts':page_attempts}
