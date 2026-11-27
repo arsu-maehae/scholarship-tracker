@@ -64,19 +64,35 @@ Database integration tests require a new, empty **disposable** PostgreSQL databa
 
 ## Backup and recovery
 
-Keep backups outside Git. With the restart database running and its default user unchanged, create a custom-format backup inside the restart container and copy it to a private location:
+Backups contain your private scholarship records, notes and profile. Keep them in a private location outside Git and retain more than one copy. These commands use the isolated `scholarship-tracker-restart` Compose project and the default database user `tracker_local`; they do not connect to the original project's database. If you changed the database user, adapt the scripts only after checking your configuration. Start Docker Desktop and the restart database first:
 
 ```powershell
-docker compose exec -T db pg_dump -U tracker_local -d scholarship_tracker_restart -Fc -f /tmp/tracker-backup.dump
-docker compose cp db:/tmp/tracker-backup.dump "$env:USERPROFILE\Documents\scholarship-tracker-backup.dump"
+cd C:\Users\s6601\work\scholarship-tracker-restart
+docker compose --project-name scholarship-tracker-restart --file compose.yaml up -d db --wait
+.\scripts\Backup-Tracker.ps1
 ```
 
-To inspect or recover a backup without overwriting current records, create a **new** database in the same isolated server, copy the backup into the container, and restore into that new database. The commands below fail if the recovery database already exists; choose a new name instead of dropping anything:
+The script prints a unique `.dump` file in `Documents\ScholarshipTrackerBackups`; it never intentionally replaces an existing file. You can choose another existing or new private directory with `-BackupDirectory "C:\path\to\private\backups"`. The dump is a consistent snapshot of the restart database at export time. Record its path for recovery.
+
+To restore, choose a **new** name beginning `scholarship_tracker_restore_`, followed by lowercase letters, digits or underscores. The script refuses an existing database and the live database name; a failed restore leaves the newly created database in place for inspection, without overwriting anything:
 
 ```powershell
-docker compose exec -T db createdb -U tracker_local scholarship_tracker_recovery
-docker compose cp "$env:USERPROFILE\Documents\scholarship-tracker-backup.dump" db:/tmp/tracker-recovery.dump
-docker compose exec -T db pg_restore -U tracker_local -d scholarship_tracker_recovery /tmp/tracker-recovery.dump
+.\scripts\Restore-Tracker.ps1 -BackupFile "C:\path\to\your\backup.dump" -RecoveryDatabase scholarship_tracker_restore_check1
 ```
 
-These commands do not replace the running database. Check the recovered data before deciding whether to use it; do not restore over existing personal data without a separate backup and an explicit decision.
+Check the recovered schema version and record counts. Replace `scholarship_tracker_restore_check1` with your chosen name in both commands. Compare with the source only if it has not changed since the backup; otherwise differences may be expected.
+
+```powershell
+docker compose --project-name scholarship-tracker-restart --file compose.yaml exec -T db psql -U tracker_local -d scholarship_tracker_restore_check1 -c "select version_num from alembic_version; select (select count(*) from tracked_scholarships) as scholarships, (select count(*) from tracked_checklist) as tasks, (select count(*) from student_profile) as profiles, (select count(*) from reviewed_requirements) as reviewed_requirements;"
+docker compose --project-name scholarship-tracker-restart --file compose.yaml exec -T db psql -U tracker_local -d scholarship_tracker_restart -c "select version_num from alembic_version; select (select count(*) from tracked_scholarships) as scholarships, (select count(*) from tracked_checklist) as tasks, (select count(*) from student_profile) as profiles, (select count(*) from reviewed_requirements) as reviewed_requirements;"
+```
+
+Counts alone cannot prove that the contents are correct. To inspect the restored records in the app, stop the existing backend, then in a **separate PowerShell window** run the following with your recovery name. Check `http://127.0.0.1:8000/health/db` reports that name before opening the frontend at `http://127.0.0.1:5173`. Inspect scholarship links, notes, funding, checklist and profile. Changes made while connected here affect the recovery database, not the original restart database.
+
+```powershell
+cd C:\Users\s6601\work\scholarship-tracker-restart\backend
+$env:POSTGRES_DB = 'scholarship_tracker_restore_check1'
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+When finished, stop that backend and close its PowerShell window. Start the normal backend in a fresh window with no `POSTGRES_DB` override, and check `/health/db` reports `scholarship_tracker_restart`. The restore does not replace the live database. Do not reset, delete, or restore over either existing database or Docker volume to recover data; keep the backup and verified recovery database until you decide on a separate recovery plan.
