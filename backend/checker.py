@@ -24,7 +24,7 @@ class ProfileInput(BaseModel):
 class RequirementInput(BaseModel):
     model_config=ConfigDict(extra='forbid',str_strip_whitespace=True)
     attempt_id: int
-    excerpt: str = Field(min_length=1,max_length=400)
+    excerpt: str = Field(min_length=1,max_length=2000)
     kind: Kind
     expected: str = Field(min_length=1,max_length=120)
 

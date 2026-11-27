@@ -1,14 +1,36 @@
 import os
+import json
 import unittest
+from types import SimpleNamespace
 from uuid import uuid4
 from email.message import Message
 from unittest.mock import patch
 from fastapi import HTTPException
-from extraction import ExtractInput, AcceptProposal, accept_proposal, extract, html_blocks, latest_extraction, suggest, text_blocks
+from extraction import ExtractInput, AcceptProposal, accept_proposal, attempt_dict, extract, html_blocks, latest_extraction, suggest, text_blocks
 from official_page import FetchError, fetch_official_html, normalize_public_https_url, official_pages_for, source_is_allowed_for_saved
 import tracked
 
 class ExtractionRuleTests(unittest.TestCase):
+    def test_old_attempts_do_not_show_general_statements_as_tasks(self):
+        row=SimpleNamespace(id=1,input_kind='page',source_url='https://example.org/',outcome='found',attempted_at=None,suggestions_json=json.dumps({'documents':[{'heading':'Application','excerpt':'Our team will provide you with documents you might need.'},{'heading':'Required documentation','excerpt':'Clear copy of a valid passport'}],'application_steps':[{'heading':'Applications','excerpt':'Applicants receive a confirmation email of successful delivery.'}]}))
+        result=attempt_dict(row)['suggestions']
+        self.assertEqual([entry['excerpt'] for entry in result['documents']],['Clear copy of a valid passport'])
+        self.assertEqual(result['application_steps'],[])
+    def test_emmir_costs_benefits_and_actionable_steps(self):
+        page='''<main><h2>Participation Costs</h2>
+        <p>The participation costs cover all obligatory programme activities and health insurance; they do also include the respective hosting university's obligatory registration and student service fees. They do not include room and board as well as other living expenses and travel.</p>
+        <p>There are three funding options for students. Your choice needs to be be specified in the application but does NOT need to be justified, nor will it affect how your application is rated.</p>
+        <h3>Erasmus+ Scholarship Holders</h3><p>The Erasmus+ Scholarship holders are selected based on merit. They will receive a monthly scholarship of 1400€ for 24 months plus their health insurance, university registration and student service fees will be covered. Scholarship holders are required to cover the cost of mobility.</p>
+        <h2>Application and Admission Procedures</h2><p>Applicants register in eMundus (link below).</p><p>Applicants receive a confirmation email of successful delivery.</p>
+        <h2>Required documentation for the online application</h2><p>Clear copy of a valid passport</p><p>The team will provide you with documents you might need.</p></main>'''
+        result=suggest(html_blocks(page))
+        costs=next(e for e in result['funding'] if e['excerpt'].startswith('The participation costs cover'))
+        benefit=next(e for e in result['funding'] if e['excerpt'].startswith('The Erasmus+ Scholarship holders'))
+        self.assertEqual(costs['financial_kind'],'cost')
+        self.assertEqual(benefit['financial_kind'],'mixed')
+        self.assertTrue(benefit['excerpt'].endswith('cover the cost of mobility.'))
+        self.assertEqual([e['excerpt'] for e in result['documents']],['Clear copy of a valid passport'])
+        self.assertEqual([e['excerpt'] for e in result['application_steps']],['Applicants register in eMundus (link below).'])
     def test_application_step_is_backed_by_excerpt(self):
         result=suggest(html_blocks('<main><h2>How to apply</h2><p>Submit your application through the online application portal.</p></main>'))
         self.assertEqual(result['application_steps'][0]['excerpt'],'Submit your application through the online application portal.')

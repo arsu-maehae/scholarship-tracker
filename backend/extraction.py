@@ -46,7 +46,7 @@ CATEGORY_PATTERNS = {
         r'curriculum vitae|CV|personal statement|statement of purpose|'
         r'(?:proof|documentation) of (?:english|language)|language proficiency)\b', re.I
     ),
-    'application_steps': re.compile(r'\b(?:apply online|online application|submit (?:your |the )?application|application portal|upload (?:your |the )?documents)\b', re.I),
+    'application_steps': re.compile(r'\b(?:apply online|online application|submit (?:your |the )?application|application portal|upload (?:your |the )?documents|applicants? (?:register|complete|submit))\b', re.I),
 }
 
 TEXT_HEADINGS = re.compile(
@@ -79,6 +79,21 @@ PRIORITY_HEADINGS = {
     'documents': re.compile(r'\brequired documentation\b', re.I),
     'application_steps': re.compile(r'\b(?:application procedure|how to apply)\b', re.I),
 }
+
+def financial_kind(heading, body):
+    benefit = bool(re.search(r'\b(?:monthly scholarship|scholarship (?:value|amount|benefits|holders? (?:receive|are selected))|scholarship holders? receive|scholarship amounts? to)\b', body, re.I))
+    cost = bool(re.search(r'\b(?:participation costs?|tuition|living (?:costs?|expenses)|pay(?:ing|ment)?|travel costs?|fees?)\b', body, re.I))
+    if benefit and cost: return 'mixed'
+    if benefit: return 'benefit'
+    if cost: return 'cost'
+    return 'unclear'
+
+def actionable_requirement(category, heading, body):
+    if category == 'documents':
+        return bool(re.search(r'\b(?:passport|\bcv\b|curriculum vitae|transcripts?|diploma|certificate|statement of purpose|personal statement|reference letters?|letters? of (?:reference|recommendation)|documentation of language|language proficiency|proof of (?:english|language))\b', body, re.I)) and not bool(re.search(r'\b(?:will be (?:compiled|answered)|unable to reply|documents (?:might|may) need|following documents)\b', body, re.I))
+    if category == 'application_steps':
+        return bool(re.search(r'\b(?:applicants? (?:register|complete|submit)|submit (?:your |the )?application|upload (?:your |the )?documents|apply online)\b', body, re.I)) and not bool(re.search(r'\b(?:receive a confirmation|will be (?:evaluated|notified)|unable to reply)\b', body, re.I))
+    return False
 
 
 def html_blocks(html):
@@ -189,13 +204,21 @@ def suggest(blocks):
                 continue
             if category == 'documents' and re.search(r'\bfollowing documents\b', body, re.I):
                 continue
-            evidence = {'heading': heading[:150], 'excerpt': body[:400]}
+            if category in ('documents','application_steps') and not actionable_requirement(category, heading, body):
+                continue
+            evidence = {'heading': heading[:150], 'excerpt': body}
+            if category == 'funding':
+                evidence['financial_kind'] = financial_kind(heading, body)
+                if re.search(r'\b(?:following participation costs|three funding options)\b',body,re.I):
+                    continue
             if category == 'deadline':
                 evidence['date'] = deadline_value(body)
                 # Check all matched blocks before suggesting a date, even beyond the display cap.
                 deadline_evidence.append({'excerpt': body})
             if evidence not in (candidate[2] for candidate in candidates[category]):
                 score = (4 if PRIORITY_HEADINGS[category].search(heading) else 0)
+                if category == 'funding' and evidence['financial_kind'] in ('benefit','mixed'):
+                    score += 5
                 score += 2 if pattern.search(body) else 0
                 score += 1 if pattern.search(heading) or special_heading else 0
                 if category == 'deadline' and (NAMED_DATE.search(body) or ISO_DATE.search(body)):
@@ -211,7 +234,15 @@ def suggest(blocks):
 
 
 def attempt_dict(row):
-    return {'id':row.id,'input_kind':row.input_kind,'source_url':row.source_url,'outcome':row.outcome,'attempted_at':row.attempted_at,'suggestions':json.loads(row.suggestions_json)}
+    data=json.loads(row.suggestions_json)
+    if 'funding' in data:
+        for entry in data['funding']:
+            entry['financial_kind']=financial_kind(entry.get('heading',''),entry.get('excerpt',''))
+        data['funding']=[entry for entry in data['funding'] if not re.search(r'\b(?:following participation costs|three funding options)\b',entry.get('excerpt',''),re.I)]
+    for category in ('documents','application_steps'):
+        if category in data:
+            data[category]=[entry for entry in data[category] if actionable_requirement(category,entry.get('heading',''),entry.get('excerpt',''))]
+    return {'id':row.id,'input_kind':row.input_kind,'source_url':row.source_url,'outcome':row.outcome,'attempted_at':row.attempted_at,'suggestions':data}
 
 @router.post('/{item_id}/extract')
 def extract(item_id: int, body: ExtractInput):
@@ -272,7 +303,7 @@ class AcceptProposal(BaseModel):
     model_config=ConfigDict(extra='forbid')
     attempt_id: int
     category: str = Field(pattern='^(documents|application_steps)$')
-    excerpt: str = Field(min_length=1,max_length=400)
+    excerpt: str = Field(min_length=1,max_length=2000)
     label: str = Field(min_length=1,max_length=250)
 
 @router.post('/{item_id}/accept-proposal')
@@ -285,6 +316,9 @@ def accept_proposal(item_id: int, body: AcceptProposal):
         entries=json.loads(attempt.suggestions_json).get(body.category,[])
         if not any(entry.get('excerpt')==body.excerpt for entry in entries):
             raise HTTPException(422,'The supporting excerpt was not found.')
+        entry=next(entry for entry in entries if entry.get('excerpt')==body.excerpt)
+        if not actionable_requirement(body.category,entry.get('heading',''),body.excerpt):
+            raise HTTPException(422,'This excerpt is not an actionable applicant task or document.')
         label=body.label.strip()
         if not label: raise HTTPException(422,'Task wording is required.')
         key=proposal_key(attempt.source_url,body.excerpt)

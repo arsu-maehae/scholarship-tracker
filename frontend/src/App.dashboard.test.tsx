@@ -68,7 +68,7 @@ describe('attention dashboard and dated tasks',()=>{
     const date=await screen.findByLabelText('Due date for Submit passport')
     fireEvent.change(date,{target:{value:'2026-11-28'}})
     await waitFor(()=>expect(taskPatches).toContainEqual({due_date:'2026-11-28'}))
-    expect((screen.getByLabelText('Due date for Submit passport') as HTMLInputElement).value).toBe('2026-11-28')
+    await waitFor(()=>expect((screen.getByLabelText('Due date for Submit passport') as HTMLInputElement).value).toBe('2026-11-28'))
 
     fireEvent.change(screen.getByPlaceholderText('Add a task'),{target:{value:'Upload transcript'}})
     fireEvent.change(screen.getByLabelText('New task due date'),{target:{value:'2026-12-02'}})

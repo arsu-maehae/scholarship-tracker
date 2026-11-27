@@ -19,7 +19,7 @@ const attempts = [
     {heading:'Required documentation',excerpt:'CV and Statement of Purpose'},
   ], proposed_deadline:null } },
   { id:2, outcome:'found', input_kind:'page', source_url:pages[1].url, attempted_at:'2026-11-25T01:00:01Z', suggestions:{ deadline:[], funding:[], eligibility:[{heading:'Entry requirements',excerpt:'Applicants must hold a relevant first degree.'}], documents:[], proposed_deadline:null } },
-  { id:3, outcome:'found', input_kind:'page', source_url:pages[2].url, attempted_at:'2026-11-25T01:00:02Z', suggestions:{ deadline:[], funding:[{heading:'Erasmus+ Scholarship Holders',excerpt:funding}], eligibility:[], documents:[], proposed_deadline:null } },
+  { id:3, outcome:'found', input_kind:'page', source_url:pages[2].url, attempted_at:'2026-11-25T01:00:02Z', suggestions:{ deadline:[], funding:[{heading:'Erasmus+ Scholarship Holders',excerpt:funding,financial_kind:'benefit'}], eligibility:[], documents:[], proposed_deadline:null } },
 ]
 
 describe('EMMIR acceptance flow', () => {
@@ -143,6 +143,22 @@ describe('EMMIR acceptance flow', () => {
     expect(patchBodies).toHaveLength(0)
     fireEvent.click(within(proposals).getAllByRole('button',{name:'Accept task'})[0])
     await waitFor(()=>expect(patchBodies[0]).toMatchObject({label:'Prepare passport copy',excerpt:'Clear copy of a valid passport'}))
+  })
+
+  it('labels costs separately and does not offer them as scholarship funding',async()=>{
+    const costAttempt={...attempts[2],suggestions:{...attempts[2].suggestions,funding:[{heading:'Participation Costs',excerpt:'The participation costs cover programme activities.',financial_kind:'cost'},{heading:'Scholarship holders',excerpt:'Scholarship holders receive a stipend but pay travel costs.',financial_kind:'mixed'}]}}
+    vi.mocked(fetch).mockImplementation(async(input:RequestInfo|URL)=>{
+      const path=String(input)
+      if(path.endsWith('/profile/current'))return new Response(JSON.stringify({nationality:null,prior_degree:null,field:null,target_intake:null,language_status:null}))
+      if(path.endsWith('/1/requirements'))return new Response('[]')
+      if(path.endsWith('/1/extraction'))return new Response(JSON.stringify({latest:costAttempt,previous_found:null,official_pages:pages,page_attempts:[costAttempt]}))
+      if(path.includes('/api/tracked-scholarships?'))return new Response(JSON.stringify([currentItem]))
+      throw new Error(path)
+    })
+    render(<App/>);fireEvent.click(await screen.findByRole('button',{name:'Open'}))
+    expect(await screen.findByText('Fees or costs — not confirmed funding')).toBeTruthy()
+    expect(screen.getByText('Benefits and costs — review both')).toBeTruthy()
+    expect(screen.queryByRole('button',{name:'Use as funding'})).toBeNull()
   })
 
   it('lets the user save profile facts and review an extracted source requirement',async()=>{
